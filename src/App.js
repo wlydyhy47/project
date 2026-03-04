@@ -9,7 +9,7 @@ import ProtectedRoute from './components/common/ProtectedRoute';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import Layout from './components/common/Layout';
 import Login from './components/auth/Login';
-
+ 
 // ✅ استيراد جميع ملفات CSS
 import './i18n';
 import './styles/variables.css';
