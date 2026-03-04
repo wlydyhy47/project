@@ -1,0 +1,149 @@
+:root {
+  /* الألوان الأساسية */
+  --primary-color: #2c3e50;
+  --primary-light: #34495e;
+  --primary-dark: #1e2b38;
+  --secondary-color: #3498db;
+  --secondary-light: #5dade2;
+  --secondary-dark: #2980b9;
+  --success-color: #27ae60;
+  --success-light: #2ecc71;
+  --success-dark: #229954;
+  --danger-color: #e74c3c;
+  --danger-light: #ec7063;
+  --danger-dark: #cb4335;
+  --warning-color: #f39c12;
+  --warning-light: #f5b041;
+  --warning-dark: #d68910;
+  --info-color: #3498db;
+  --info-light: #5dade2;
+  --info-dark: #2980b9;
+  --light-color: #ecf0f1;
+  --dark-color: #2c3e50;
+  --white-color: #ffffff;
+  --gray-color: #95a5a6;
+  --gray-light: #bdc3c7;
+  --gray-dark: #7f8c8d;
+  
+  /* ألوان إضافية */
+  --sidebar-bg: #2c3e50;
+  --sidebar-hover: #34495e;
+  --sidebar-active: #3498db;
+  --header-bg: #ffffff;
+  --card-bg: #ffffff;
+  --body-bg: #f5f7fa;
+  --border-color: #ecf0f1;
+  
+  /* أحجام */
+  --sidebar-width: 280px;
+  --sidebar-collapsed-width: 80px;
+  --header-height: 70px;
+  --border-radius-sm: 4px;
+  --border-radius: 8px;
+  --border-radius-lg: 12px;
+  --border-radius-xl: 16px;
+  
+  /* ظلال */
+  --box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  --box-shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
+  --box-shadow-lg: 0 4px 6px rgba(0,0,0,0.1);
+  --box-shadow-xl: 0 10px 15px rgba(0,0,0,0.1);
+  
+  /* خطوط */
+  --font-family: 'Cairo', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  --font-size-xs: 12px;
+  --font-size-sm: 14px;
+  --font-size-md: 16px;
+  --font-size-lg: 18px;
+  --font-size-xl: 20px;
+  --font-size-xxl: 24px;
+  
+  /* ألوان الحالات */
+  --status-pending: #f39c12;
+  --status-accepted: #3498db;
+  --status-picked: #9b59b6;
+  --status-delivered: #27ae60;
+  --status-cancelled: #e74c3c;
+  --status-open: #27ae60;
+  --status-closed: #e74c3c;
+  
+  /* z-index */
+  --z-index-dropdown: 1000;
+  --z-index-sticky: 1020;
+  --z-index-fixed: 1030;
+  --z-index-modal-backdrop: 1040;
+  --z-index-modal: 1050;
+  --z-index-popover: 1060;
+  --z-index-tooltip: 1070;
+  
+  /* انتقالات */
+  --transition-fast: 0.2s;
+  --transition-normal: 0.3s;
+  --transition-slow: 0.5s;
+}
+
+/* RTL Support */
+[dir="rtl"] {
+  --sidebar-width: 280px;
+  --sidebar-collapsed-width: 80px;
+}
+
+[dir="ltr"] {
+  --sidebar-width: 280px;
+  --sidebar-collapsed-width: 80px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--body-bg);
+  color: var(--dark-color);
+  line-height: 1.6;
+  font-size: var(--font-size-md);
+}
+
+/* تصميم متجاوب */
+@media (max-width: 1200px) {
+  :root {
+    --sidebar-width: 240px;
+  }
+}
+
+@media (max-width: 992px) {
+  :root {
+    --sidebar-width: 200px;
+  }
+}
+
+@media (max-width: 768px) {
+  :root {
+    --sidebar-width: 0px;
+    --header-height: 60px;
+  }
+}
+
+/* Scrollbar مخصص */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--primary-color);
+  border-radius: 4px;
+  transition: var(--transition-fast);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-light);
+}
