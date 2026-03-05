@@ -54,7 +54,7 @@ const Login = () => {
     if (formData.phone) {
       // إزالة المسافات والرموز غير الرقمية
       const cleanedPhone = formData.phone.replace(/\D/g, '');
-      if (cleanedPhone.length < 8 || cleanedPhone.length > 15) {
+      if (cleanedPhone.length < 4 || cleanedPhone.length > 15) {
         newErrors.phone = 'رقم الهاتف غير صالح (يجب أن يكون بين 8 و 15 رقم)';
       }
     }
