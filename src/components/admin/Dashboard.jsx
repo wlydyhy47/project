@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+// src/components/admin/Dashboard.jsx
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { adminAPI } from '../../services/api';
 import DashboardCharts from '../charts/DashboardCharts';
@@ -20,6 +21,7 @@ const Dashboard = () => {
   const { onlineUsers } = useSocket();
   const [timeRange, setTimeRange] = useState('today');
 
+  // ✅ البيانات نظيفة ومباشرة الآن
   const { data: stats, isLoading, refetch } = useQuery({
     queryKey: ['dashboardStats'],
     queryFn: adminAPI.getDashboardStats,
@@ -31,57 +33,54 @@ const Dashboard = () => {
     queryFn: () => adminAPI.getOrdersStats({ period: timeRange }),
   });
 
-  // ✅ استخراج البيانات بشكل آمن
-  const dashboardData = stats?.data?.data || {};
-  const ordersStatsData = ordersStats?.data?.data || {};
-
+  // ✅ stats نفسه هو البيانات - بدون الحاجة لـ data?.data?.data
   const statsCards = [
     {
       title: t('total_users'),
-      value: dashboardData.totalUsers || 0,
+      value: stats?.totalUsers || 0,
       icon: <FaUsers />,
       color: '#3498db',
-      change: dashboardData.userGrowth || 0,
+      change: stats?.userGrowth || 0,
     },
     {
       title: t('total_restaurants'),
-      value: dashboardData.totalRestaurants || 0,
+      value: stats?.totalRestaurants || 0,
       icon: <FaStore />,
       color: '#27ae60',
-      change: dashboardData.restaurantGrowth || 0,
+      change: stats?.restaurantGrowth || 0,
     },
     {
       title: t('total_orders'),
-      value: dashboardData.totalOrders || 0,
+      value: stats?.totalOrders || 0,
       icon: <FaShoppingBag />,
       color: '#f39c12',
-      change: dashboardData.orderGrowth || 0,
+      change: stats?.orderGrowth || 0,
     },
     {
       title: t('total_revenue'),
-      value: formatCurrency(dashboardData.totalRevenue || 0),
+      value: formatCurrency(stats?.totalRevenue || 0),
       icon: <FaMoneyBillWave />,
       color: '#9b59b6',
-      change: dashboardData.revenueGrowth || 0,
+      change: stats?.revenueGrowth || 0,
     },
     {
       title: t('active_drivers'),
-      value: dashboardData.activeDrivers || 0,
+      value: stats?.activeDrivers || 0,
       icon: <FaTruck />,
       color: '#e74c3c',
       change: null,
     },
     {
       title: t('online_users'),
-      value: onlineUsers.length || 0,
+      value: onlineUsers?.length || 0,
       icon: <FaChartLine />,
       color: '#2c3e50',
       change: null,
     },
   ];
 
-  const recentOrders = dashboardData.recentOrders || [];
-  const topRestaurants = dashboardData.topRestaurants || [];
+  const recentOrders = stats?.recentOrders || [];
+  const topRestaurants = stats?.topRestaurants || [];
 
   if (isLoading) {
     return (
@@ -132,7 +131,7 @@ const Dashboard = () => {
       </div>
 
       <div className="dashboard-charts">
-        <DashboardCharts data={ordersStatsData} />
+        <DashboardCharts data={ordersStats} />
       </div>
 
       <div className="dashboard-grid">

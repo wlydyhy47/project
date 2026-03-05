@@ -1,3 +1,4 @@
+// src/components/admin/UsersManagement.jsx
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminAPI } from '../../services/api';
@@ -21,6 +22,7 @@ const UsersManagement = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
+  // ✅ البيانات نظيفة ومباشرة
   const { data, isLoading } = useQuery({
     queryKey: ['users', page, search],
     queryFn: () => adminAPI.getUsers({
@@ -30,10 +32,8 @@ const UsersManagement = () => {
     }),
   });
 
-  // ✅ استخراج البيانات بشكل آمن
-  const usersData = data?.data?.data || {};
-  const users = usersData.users || [];
-  const totalPages = usersData.totalPages || 1;
+  const users = data?.users || [];
+  const totalPages = data?.totalPages || 1;
 
   const deleteUserMutation = useMutation({
     mutationFn: ({ id, reason }) => adminAPI.deleteUser(id, reason),

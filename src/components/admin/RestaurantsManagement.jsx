@@ -1,3 +1,4 @@
+// src/components/admin/RestaurantsManagement.jsx
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminAPI } from '../../services/api';
@@ -24,7 +25,9 @@ const RestaurantsManagement = () => {
   const [search, setSearch] = useState('');
   const [selectedRestaurant, setSelectedRestaurant] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
 
+  // ✅ البيانات نظيفة ومباشرة الآن
   const { data, isLoading, error, refetch, isFetching } = useQuery({
     queryKey: ['restaurants', page, search],
     queryFn: () => adminAPI.getRestaurants({
@@ -32,14 +35,13 @@ const RestaurantsManagement = () => {
       limit: 10,
       search,
     }),
-    keepPreviousData: true, // الاحتفاظ بالبيانات السابقة أثناء التحميل
+    keepPreviousData: true,
   });
 
-  // ✅ استخراج البيانات بشكل آمن
-  const restaurantsData = data?.data?.data || {};
-  const restaurants = restaurantsData.restaurants || [];
-  const totalPages = restaurantsData.totalPages || 1;
-  const totalRestaurants = restaurantsData.total || 0;
+  // ✅ data نفسه يحتوي على restaurants, totalPages, total
+  const restaurants = data?.restaurants || [];
+  const totalPages = data?.totalPages || 1;
+  const totalRestaurants = data?.total || 0;
 
   const deleteRestaurantMutation = useMutation({
     mutationFn: (id) => adminAPI.deleteRestaurant(id),
@@ -53,7 +55,6 @@ const RestaurantsManagement = () => {
     },
   });
 
-  // ✅ معالجة حالة التحميل
   if (isLoading) {
     return (
       <div className="loading-container">
@@ -63,7 +64,6 @@ const RestaurantsManagement = () => {
     );
   }
 
-  // ✅ معالجة حالة الخطأ
   if (error) {
     return (
       <div className="error-container">

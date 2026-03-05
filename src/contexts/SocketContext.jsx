@@ -1,3 +1,4 @@
+// src/contexts/SocketContext.jsx (نسخة محسنة بالكامل)
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import io from 'socket.io-client';
 import { useAuth } from './AuthContext';
@@ -14,7 +15,6 @@ export const useSocket = () => {
 };
 
 export const SocketProvider = ({ children }) => {
-  const [socket, setSocket] = useState(null);
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [isConnected, setIsConnected] = useState(false);
@@ -23,7 +23,28 @@ export const SocketProvider = ({ children }) => {
   const { user, isAuthenticated } = useAuth();
   const socketRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
+  const listenersRef = useRef(new Map()); // ✅ تخزين المستمعين لإزالتهم بسهولة
   const maxReconnectAttempts = 5;
+
+  const SOCKET_URL = process.env.REACT_APP_SOCKET_URL || 'https://backend-walid-yahaya.onrender.com';
+
+  // ✅ دالة لإزالة جميع المستمعين
+  const removeAllListeners = useCallback(() => {
+    if (socketRef.current) {
+      listenersRef.current.forEach((_, eventName) => {
+        socketRef.current.off(eventName);
+      });
+      listenersRef.current.clear();
+    }
+  }, []);
+
+  // ✅ دالة لإضافة مستمع مع تتبعه
+  const addSocketListener = useCallback((event, handler) => {
+    if (socketRef.current) {
+      socketRef.current.on(event, handler);
+      listenersRef.current.set(event, handler);
+    }
+  }, []);
 
   // دالة إنشاء اتصال السوكيت
   const connectSocket = useCallback(() => {
@@ -38,13 +59,13 @@ export const SocketProvider = ({ children }) => {
       return null;
     }
 
-    console.log('🔌 Attempting to connect socket...');
+    console.log('🔌 Attempting to connect socket to:', SOCKET_URL);
     
-    const newSocket = io('https://backend-walid-yahaya.onrender.com', {
+    const newSocket = io(SOCKET_URL, {
       auth: {
         token: `Bearer ${token}`,
       },
-      transports: ['websocket', 'polling'], // إضافة polling كخيار احتياطي
+      transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionAttempts: 10,
       reconnectionDelay: 1000,
@@ -55,7 +76,7 @@ export const SocketProvider = ({ children }) => {
     });
 
     return newSocket;
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user, SOCKET_URL]);
 
   // دالة إعادة الاتصال
   const reconnect = useCallback(() => {
@@ -74,6 +95,7 @@ export const SocketProvider = ({ children }) => {
       setReconnectAttempts(prev => prev + 1);
       
       if (socketRef.current) {
+        removeAllListeners();
         socketRef.current.disconnect();
         socketRef.current = null;
       }
@@ -81,105 +103,10 @@ export const SocketProvider = ({ children }) => {
       const newSocket = connectSocket();
       if (newSocket) {
         setupSocketListeners(newSocket);
-        setSocket(newSocket);
         socketRef.current = newSocket;
       }
-    }, Math.min(1000 * Math.pow(2, reconnectAttempts), 10000)); // تأخير تصاعدي
-  }, [reconnectAttempts, connectSocket]);
-
-  // إعداد مستمعي الأحداث للسوكيت
-  const setupSocketListeners = useCallback((socketInstance) => {
-    if (!socketInstance) return;
-
-    socketInstance.on('connect', () => {
-      console.log('✅ Socket connected successfully:', socketInstance.id);
-      setIsConnected(true);
-      setReconnectAttempts(0);
-      
-      if (user?.id) {
-        socketInstance.emit('user-online', user.id);
-      }
-      
-      toast.success('تم الاتصال بالخادم', { duration: 2000 });
-    });
-
-    socketInstance.on('disconnect', (reason) => {
-      console.log('🔴 Socket disconnected:', socketInstance.id, 'reason:', reason);
-      setIsConnected(false);
-      
-      if (reason === 'io server disconnect' || reason === 'transport close') {
-        // محاولة إعادة الاتصال
-        reconnect();
-      }
-    });
-
-    socketInstance.on('connect_error', (error) => {
-      console.error('❌ Socket connection error:', error.message);
-      setIsConnected(false);
-      
-      // إذا كان خطأ المصادقة، حاول تجديد التوكن
-      if (error.message.includes('Invalid token') || error.message.includes('unauthorized')) {
-        handleTokenError();
-      } else {
-        reconnect();
-      }
-    });
-
-    socketInstance.on('notification', (notification) => {
-      console.log('📬 New notification:', notification);
-      setNotifications((prev) => [notification, ...prev]);
-      
-      // عرض إشعار للمستخدم حسب الأولوية
-      if (notification.priority === 'high' || notification.priority === 'urgent') {
-        toast.success(notification.title || notification.message, {
-          duration: 5000,
-          icon: '🔔',
-        });
-      }
-    });
-
-    socketInstance.on('order-update', (order) => {
-      console.log('📦 Order update:', order);
-      toast.success(`تحديث الطلب #${order.id}: ${order.status}`, {
-        duration: 4000,
-      });
-    });
-
-    socketInstance.on('driver-location', (data) => {
-      // تحديث موقع المندوب على الخريطة
-      window.dispatchEvent(new CustomEvent('driver-location-update', { 
-        detail: data 
-      }));
-    });
-
-    socketInstance.on('users-online', (users) => {
-      console.log('👥 Online users:', users.length);
-      setOnlineUsers(users);
-    });
-
-    socketInstance.on('reconnect', (attemptNumber) => {
-      console.log('🔄 Socket reconnected after', attemptNumber, 'attempts');
-      setIsConnected(true);
-      setReconnectAttempts(0);
-      
-      if (user?.id) {
-        socketInstance.emit('user-online', user.id);
-      }
-    });
-
-    socketInstance.on('reconnect_attempt', (attemptNumber) => {
-      console.log('🔄 Reconnection attempt:', attemptNumber);
-    });
-
-    socketInstance.on('reconnect_error', (error) => {
-      console.error('❌ Reconnection error:', error);
-    });
-
-    socketInstance.on('reconnect_failed', () => {
-      console.error('❌ Reconnection failed');
-      toast.error('فشل الاتصال بالخادم، يرجى تحديث الصفحة');
-    });
-  }, [user?.id, reconnect]);
+    }, Math.min(1000 * Math.pow(2, reconnectAttempts), 10000));
+  }, [reconnectAttempts, connectSocket, removeAllListeners]);
 
   // معالجة أخطاء التوكن
   const handleTokenError = useCallback(async () => {
@@ -191,7 +118,8 @@ export const SocketProvider = ({ children }) => {
         throw new Error('No refresh token');
       }
 
-      const response = await fetch('https://backend-walid-yahaya.onrender.com/api/auth/refresh', {
+      const API_URL = SOCKET_URL.replace(/\/socket$/, '');
+      const response = await fetch(`${API_URL}/api/auth/refresh`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -209,15 +137,15 @@ export const SocketProvider = ({ children }) => {
           localStorage.setItem('refreshToken', newRefreshToken);
         }
 
-        // إعادة الاتصال بالتوكن الجديد
         if (socketRef.current) {
+          removeAllListeners();
           socketRef.current.disconnect();
+          socketRef.current = null;
         }
 
         const newSocket = connectSocket();
         if (newSocket) {
           setupSocketListeners(newSocket);
-          setSocket(newSocket);
           socketRef.current = newSocket;
         }
       } else {
@@ -225,46 +153,151 @@ export const SocketProvider = ({ children }) => {
       }
     } catch (error) {
       console.error('❌ Token refresh failed:', error);
-      // تسجيل الخروج إذا فشل تجديد التوكن
       localStorage.clear();
       window.location.href = '/login';
       toast.error('انتهت الجلسة، يرجى تسجيل الدخول مرة أخرى');
     }
-  }, [connectSocket, setupSocketListeners]);
+  }, [connectSocket, SOCKET_URL, removeAllListeners]);
+
+  // ✅ إعداد مستمعي الأحداث - نسخة محسنة
+  const setupSocketListeners = useCallback((socketInstance) => {
+    if (!socketInstance) return;
+
+    // إزالة أي مستمعين سابقين
+    removeAllListeners();
+
+    // إضافة المستمعين الجدد مع التتبع
+    addSocketListener('connect', () => {
+      console.log('✅ Socket connected successfully:', socketInstance.id);
+      setIsConnected(true);
+      setReconnectAttempts(0);
+      
+      if (user?.id) {
+        socketInstance.emit('user-online', user.id);
+      }
+      
+      toast.success('تم الاتصال بالخادم', { duration: 2000 });
+    });
+
+    addSocketListener('disconnect', (reason) => {
+      console.log('🔴 Socket disconnected:', socketInstance.id, 'reason:', reason);
+      setIsConnected(false);
+      
+      if (reason === 'io server disconnect' || reason === 'transport close') {
+        reconnect();
+      }
+    });
+
+    addSocketListener('connect_error', (error) => {
+      console.error('❌ Socket connection error:', error.message);
+      setIsConnected(false);
+      
+      if (error.message.includes('Invalid token') || error.message.includes('unauthorized')) {
+        handleTokenError();
+      } else {
+        reconnect();
+      }
+    });
+
+    addSocketListener('notification', (notification) => {
+      console.log('📬 New notification:', notification);
+      setNotifications((prev) => {
+        // ✅ منع التكرار
+        const exists = prev.some(n => n.id === notification.id);
+        if (exists) return prev;
+        return [notification, ...prev].slice(0, 50); // حفظ آخر 50 إشعار فقط
+      });
+      
+      if (notification.priority === 'high' || notification.priority === 'urgent') {
+        toast.success(notification.title || notification.message, {
+          duration: 5000,
+          icon: '🔔',
+        });
+      }
+    });
+
+    addSocketListener('order-update', (order) => {
+      console.log('📦 Order update:', order);
+      toast.success(`تحديث الطلب #${order.id}: ${order.status}`, {
+        duration: 4000,
+      });
+    });
+
+    addSocketListener('driver-location', (data) => {
+      window.dispatchEvent(new CustomEvent('driver-location-update', { 
+        detail: data 
+      }));
+    });
+
+    addSocketListener('users-online', (users) => {
+      console.log('👥 Online users:', users.length);
+      setOnlineUsers(users);
+    });
+
+    addSocketListener('reconnect', (attemptNumber) => {
+      console.log('🔄 Socket reconnected after', attemptNumber, 'attempts');
+      setIsConnected(true);
+      setReconnectAttempts(0);
+      
+      if (user?.id) {
+        socketInstance.emit('user-online', user.id);
+      }
+    });
+
+    addSocketListener('reconnect_attempt', (attemptNumber) => {
+      console.log('🔄 Reconnection attempt:', attemptNumber);
+    });
+
+    addSocketListener('reconnect_error', (error) => {
+      console.error('❌ Reconnection error:', error);
+    });
+
+    addSocketListener('reconnect_failed', () => {
+      console.error('❌ Reconnection failed');
+      toast.error('فشل الاتصال بالخادم، يرجى تحديث الصفحة');
+    });
+
+  }, [user?.id, reconnect, handleTokenError, addSocketListener, removeAllListeners]);
 
   // تأثير لإنشاء الاتصال عند المصادقة
   useEffect(() => {
     if (isAuthenticated && user) {
       console.log('🔌 Creating socket connection...');
       
-      // تنظيف الاتصال القديم إن وجد
       if (socketRef.current) {
+        removeAllListeners();
         socketRef.current.disconnect();
-        socketRef.current.removeAllListeners();
+        socketRef.current = null;
       }
 
       const newSocket = connectSocket();
       if (newSocket) {
         setupSocketListeners(newSocket);
-        setSocket(newSocket);
         socketRef.current = newSocket;
       }
     }
 
-    // تنظيف عند إلغاء التثبيت
     return () => {
       console.log('🧹 Cleaning up socket connection...');
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
       }
+      
       if (socketRef.current) {
-        socketRef.current.removeAllListeners();
+        removeAllListeners();
         socketRef.current.disconnect();
         socketRef.current = null;
       }
-      setSocket(null);
+      
+      // ✅ تنظيف الحالة
+      setIsConnected(false);
+      setOnlineUsers([]);
+      setNotifications([]);
+      setReconnectAttempts(0);
+      listenersRef.current.clear();
     };
-  }, [isAuthenticated, user, connectSocket, setupSocketListeners]);
+  }, [isAuthenticated, user, connectSocket, setupSocketListeners, removeAllListeners]);
 
   // دوال التفاعل مع السوكيت
   const sendMessage = useCallback((conversationId, message) => {
@@ -275,23 +308,37 @@ export const SocketProvider = ({ children }) => {
         sender: user?.id,
         timestamp: new Date(),
       });
+      return true;
     } else {
       console.warn('⚠️ Socket not connected, message not sent');
       toast.error('غير متصل بالخادم، سيتم إرسال الرسالة لاحقاً');
-      // يمكن تخزين الرسالة لإرسالها لاحقاً
+      return false;
     }
   }, [user?.id, isConnected]);
 
   const joinConversation = useCallback((conversationId) => {
     if (socketRef.current && isConnected) {
       socketRef.current.emit('join-conversation', conversationId);
+      return true;
     }
+    return false;
   }, [isConnected]);
 
   const leaveConversation = useCallback((conversationId) => {
     if (socketRef.current && isConnected) {
       socketRef.current.emit('leave-conversation', conversationId);
+      return true;
     }
+    return false;
+  }, [isConnected]);
+
+  // ✅ دالة لإرسال حدث مخصص
+  const emit = useCallback((event, data) => {
+    if (socketRef.current && isConnected) {
+      socketRef.current.emit(event, data);
+      return true;
+    }
+    return false;
   }, [isConnected]);
 
   const value = {
@@ -303,6 +350,7 @@ export const SocketProvider = ({ children }) => {
     sendMessage,
     joinConversation,
     leaveConversation,
+    emit, // ✅ إضافة دالة emit
     setNotifications,
   };
 

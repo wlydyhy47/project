@@ -1,3 +1,4 @@
+// src/services/api.js
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
@@ -11,11 +12,25 @@ const api = axios.create({
   },
 });
 
-// إضافة token للتخزين المؤقت للتجنب القراءة المتكررة من localStorage
+// إضافة token للتخزين المؤقت
 let cachedToken = null;
 let tokenRefreshPromise = null;
+let failedQueue = []; // ✅ قائمة الطلبات المعلقة
 
-// ✅ دالة للحصول على التوكن مع التخزين المؤقت
+// ✅ دالة معالجة قائمة الانتظار
+const processQueue = (error, token = null) => {
+  failedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  
+  failedQueue = [];
+};
+
+// دالة للحصول على التوكن
 const getToken = () => {
   if (!cachedToken) {
     cachedToken = localStorage.getItem('accessToken');
@@ -23,7 +38,7 @@ const getToken = () => {
   return cachedToken;
 };
 
-// ✅ دالة لتحديث التوكن المخزن مؤقتاً
+// دالة لتحديث التوكن
 const updateToken = (token) => {
   cachedToken = token;
   if (token) {
@@ -33,17 +48,13 @@ const updateToken = (token) => {
   }
 };
 
-// ✅ Interceptor للطلب - إرسال Bearer token
+// Interceptor للطلب
 api.interceptors.request.use(
   (config) => {
     const token = getToken();
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`📤 ${config.method.toUpperCase()} ${config.url}`);
-      }
     }
 
     return config;
@@ -53,38 +64,44 @@ api.interceptors.request.use(
   }
 );
 
-// ✅ Interceptor للرد مع معالجة محسنة للـ refresh token
+// Interceptor للرد - نسخة محسنة
 api.interceptors.response.use(
   (response) => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`📥 ${response.config.method.toUpperCase()} ${response.config.url}`, {
-        status: response.status,
-        dataStructure: response.data ? Object.keys(response.data) : 'no data'
-      });
-    }
     return response;
   },
   async (error) => {
     const originalRequest = error.config;
 
-    // تجنب التكرار في حالة فشل الـ refresh نفسه
-    if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url.includes('/auth/refresh')) {
+    // ✅ تجنب التكرار للطلبات التي فشلت بسبب 401
+    if (error.response?.status === 401 && !originalRequest._retry) {
       
+      // ✅ إذا كان الطلب هو نفسه refresh token وفشل
+      if (originalRequest.url.includes('/auth/refresh')) {
+        localStorage.clear();
+        cachedToken = null;
+        window.location.href = '/login';
+        toast.error('انتهت الجلسة، يرجى تسجيل الدخول مرة أخرى');
+        return Promise.reject(error);
+      }
+
+      // ✅ إذا كان هناك طلب refresh قيد التنفيذ
       if (tokenRefreshPromise) {
-        // إذا كان هناك طلب تحديث قيد التنفيذ، انتظر حتى يكتمل
         try {
-          await tokenRefreshPromise;
-          // أعد المحاولة بالتوكن الجديد
-          originalRequest.headers.Authorization = `Bearer ${getToken()}`;
+          // إضافة الطلب إلى قائمة الانتظار
+          const token = await new Promise((resolve, reject) => {
+            failedQueue.push({ resolve, reject });
+          });
+          
+          originalRequest.headers.Authorization = `Bearer ${token}`;
           return api(originalRequest);
-        } catch (refreshError) {
-          return Promise.reject(refreshError);
+        } catch (err) {
+          return Promise.reject(err);
         }
       }
 
       originalRequest._retry = true;
       
-      // إنشاء وعد جديد لتحديث التوكن
+      // ✅ إنشاء طلب refresh جديد
       tokenRefreshPromise = (async () => {
         try {
           const refreshToken = localStorage.getItem('refreshToken');
@@ -105,9 +122,13 @@ api.interceptors.response.use(
             localStorage.setItem('refreshToken', newRefreshToken);
           }
 
+          // ✅ معالجة قائمة الانتظار
+          processQueue(null, accessToken);
+          
           return accessToken;
         } catch (refreshError) {
-          // فشل التحديث - تسجيل الخروج
+          // ✅ فشل refresh - تنظيف كل شيء
+          processQueue(refreshError, null);
           localStorage.clear();
           cachedToken = null;
           window.location.href = '/login';
@@ -127,13 +148,12 @@ api.interceptors.response.use(
       }
     }
 
-    // معالجة الأخطاء الأخرى
+    // ✅ معالجة الأخطاء الأخرى
     const errorMessage = error.response?.data?.message || 
                         error.response?.data?.error || 
                         error.message || 
                         'حدث خطأ في الاتصال';
     
-    // لا نظهر toast للأخطاء 401 لأننا نعالجها بالفعل
     if (error.response?.status !== 401) {
       toast.error(errorMessage);
     }
@@ -142,267 +162,165 @@ api.interceptors.response.use(
   }
 );
 
-// ✅ دالة مساعدة متطورة لاستخراج البيانات من مختلف هياكل الردود
-const extractData = (response, defaultData = null) => {
-  if (!response || !response.data) return defaultData;
+// ✅ دالة استخراج البيانات
+const extractData = (response) => {
+  if (!response || !response.data) return null;
   
   const res = response.data;
   
-  // هيكل السيرفر: { success: true, data: [], pagination: {}, timestamp: {}, metadata: {} }
   if (res.success === true && res.data !== undefined) {
     return res.data;
   }
   
-  // هيكل قديم: { data: { ... } }
-  if (res.data !== undefined) {
-    return res.data;
-  }
-  
-  // إذا كان الرد نفسه هو المصفوفة
-  if (Array.isArray(res)) {
-    return res;
-  }
-  
-  // إذا كان الكائن نفسه هو البيانات
-  if (res && typeof res === 'object' && !res.success && !res.data) {
+  if (res && typeof res === 'object' && !res.success) {
     return res;
   }
   
   return res;
 };
 
-// ✅ دالة مساعدة متطورة لاستخراج الباجينيشن
-const extractPagination = (response) => {
-  if (!response || !response.data) return null;
-  
-  const res = response.data;
-  
-  // هيكل السيرفر: { pagination: { ... } }
-  if (res.pagination) {
-    return res.pagination;
-  }
-  
-  // هيكل آخر: { data: { pagination: { ... } } }
-  if (res.data && res.data.pagination) {
-    return res.data.pagination;
-  }
-  
-  // استخراج من البيانات المغلفة
-  if (res.data && typeof res.data === 'object') {
-    const dataObj = res.data;
-    if (dataObj.totalPages !== undefined || dataObj.page !== undefined) {
-      return {
-        page: dataObj.page || 1,
-        totalPages: dataObj.totalPages || 1,
-        total: dataObj.total || 0,
-        limit: dataObj.limit || 10
-      };
-    }
-  }
-  
-  return null;
-};
-
-// ✅ دالة التحقق من صحة التوكن
-export const validateToken = async () => {
-  try {
-    const token = getToken();
-    if (!token) {
-      return false;
-    }
-
-    const response = await api.get('/auth/validate');
-    const data = extractData(response);
-    return data?.valid || data?.success || false;
-  } catch (error) {
-    console.error('❌ Token validation failed:', error);
-    if (error.response?.status === 401) {
-      return false;
-    }
-    if (error.message === 'Network Error') {
-      console.log('⚠️ Network error during token validation, assuming valid');
-      return true;
-    }
-    return false;
-  }
-};
-
-// ✅ دالة تجديد التوكن
-export const refreshToken = async () => {
-  try {
-    const refreshToken = localStorage.getItem('refreshToken');
-    if (!refreshToken) {
-      throw new Error('No refresh token');
-    }
-
-    const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
-      refreshToken,
-    });
-
-    const data = extractData(response);
-    const { accessToken, refreshToken: newRefreshToken } = data;
-
-    updateToken(accessToken);
-    if (newRefreshToken) {
-      localStorage.setItem('refreshToken', newRefreshToken);
-    }
-
-    return accessToken;
-  } catch (error) {
-    console.error('❌ Token refresh failed:', error);
-    throw error;
-  }
-};
-
 // ✅ دوال API مع معالجة موحدة للبيانات
 export const adminAPI = {
-  // ✅ لوحة التحكم الرئيسية
+  // لوحة التحكم الرئيسية
   getDashboardStats: async () => {
     try {
       const response = await api.get('/aggregate/admin/dashboard');
-      const data = extractData(response, {});
+      const data = extractData(response);
       return {
-        data: {
-          data: data || {
-            totalUsers: 0,
-            totalRestaurants: 0,
-            totalOrders: 0,
-            totalRevenue: 0,
-            activeDrivers: 0,
-            recentOrders: [],
-            topRestaurants: []
-          }
-        }
+        totalUsers: data?.totalUsers || 0,
+        totalRestaurants: data?.totalRestaurants || 0,
+        totalOrders: data?.totalOrders || 0,
+        totalRevenue: data?.totalRevenue || 0,
+        activeDrivers: data?.activeDrivers || 0,
+        recentOrders: data?.recentOrders || [],
+        topRestaurants: data?.topRestaurants || [],
+        userGrowth: data?.userGrowth || 0,
+        restaurantGrowth: data?.restaurantGrowth || 0,
+        orderGrowth: data?.orderGrowth || 0,
+        revenueGrowth: data?.revenueGrowth || 0,
       };
     } catch (error) {
       console.error('Dashboard stats error:', error);
-      throw error;
+      return {
+        totalUsers: 0,
+        totalRestaurants: 0,
+        totalOrders: 0,
+        totalRevenue: 0,
+        activeDrivers: 0,
+        recentOrders: [],
+        topRestaurants: [],
+        userGrowth: 0,
+        restaurantGrowth: 0,
+        orderGrowth: 0,
+        revenueGrowth: 0,
+      };
     }
   },
 
-  // ✅ إدارة المطاعم - مُحسنة بشكل كبير
+  // إدارة المطاعم
   getRestaurants: async (params) => {
     try {
       const response = await api.get('/restaurants', { params });
+      const data = extractData(response);
       
-      // استخراج البيانات الأساسية
-      const restaurantsData = extractData(response);
-      const pagination = extractPagination(response);
-      
-      console.log('📦 Restaurants API Response:', { 
-        raw: response.data,
-        extracted: restaurantsData,
-        pagination 
-      });
-      
-      // معالجة ذكية للبيانات
       let restaurants = [];
       let totalPages = 1;
       let total = 0;
       
-      if (Array.isArray(restaurantsData)) {
-        // الحالة 1: البيانات هي مصفوفة مباشرة
-        restaurants = restaurantsData;
-        total = restaurantsData.length;
-      } else if (restaurantsData && typeof restaurantsData === 'object') {
-        // الحالة 2: البيانات هي كائن يحتوي على المصفوفة
-        if (Array.isArray(restaurantsData.restaurants)) {
-          restaurants = restaurantsData.restaurants;
-        } else if (Array.isArray(restaurantsData.data)) {
-          restaurants = restaurantsData.data;
-        } else if (Array.isArray(restaurantsData.items)) {
-          restaurants = restaurantsData.items;
-        }
-        
-        total = restaurantsData.total || restaurants.length;
-      }
-      
-      // استخدام معلومات الباجينيشن إن وجدت
-      if (pagination) {
-        totalPages = pagination.totalPages || pagination.pageCount || 1;
-        total = pagination.total || total;
-      } else if (restaurantsData && restaurantsData.totalPages) {
-        totalPages = restaurantsData.totalPages;
+      if (Array.isArray(data)) {
+        restaurants = data;
+        total = data.length;
+      } else if (data && typeof data === 'object') {
+        restaurants = data.restaurants || data.data || data.items || [];
+        total = data.total || restaurants.length;
+        totalPages = data.totalPages || data.pageCount || 1;
       }
       
       return {
-        data: {
-          data: {
-            restaurants,
-            totalPages,
-            currentPage: pagination?.page || params?.page || 1,
-            total
-          }
-        }
+        restaurants,
+        totalPages,
+        currentPage: params?.page || 1,
+        total,
       };
     } catch (error) {
       console.error('Get restaurants error:', error);
-      throw error;
+      return {
+        restaurants: [],
+        totalPages: 1,
+        currentPage: 1,
+        total: 0,
+      };
     }
   },
 
   getRestaurantDetails: async (id) => {
     try {
       const response = await api.get(`/aggregate/restaurants/${id}/full`);
-      const data = extractData(response);
-      return { data: { data: data || {} } };
+      return extractData(response) || {};
     } catch (error) {
       console.error('Get restaurant details error:', error);
+      return {};
+    }
+  },
+
+  deleteRestaurant: async (id) => {
+    try {
+      const response = await api.delete(`/restaurants/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error('Delete restaurant error:', error);
       throw error;
     }
   },
 
-  // ✅ إدارة المستخدمين - مُحسنة
+  // إدارة المستخدمين
   getUsers: async (params) => {
     try {
       const response = await api.get('/complete/admin/users', { params });
-      
-      const usersData = extractData(response);
-      const pagination = extractPagination(response);
+      const data = extractData(response);
       
       let users = [];
       let totalPages = 1;
       let total = 0;
       
-      if (Array.isArray(usersData)) {
-        users = usersData;
-        total = usersData.length;
-      } else if (usersData && typeof usersData === 'object') {
-        users = usersData.users || usersData.data || usersData.items || [];
-        total = usersData.total || users.length;
-        totalPages = usersData.totalPages || pagination?.totalPages || 1;
+      if (Array.isArray(data)) {
+        users = data;
+        total = data.length;
+      } else if (data && typeof data === 'object') {
+        users = data.users || data.data || data.items || [];
+        total = data.total || users.length;
+        totalPages = data.totalPages || 1;
       }
       
       return {
-        data: {
-          data: {
-            users,
-            totalPages,
-            total
-          }
-        }
+        users,
+        totalPages,
+        total,
       };
     } catch (error) {
       console.error('Get users error:', error);
-      throw error;
+      return {
+        users: [],
+        totalPages: 1,
+        total: 0,
+      };
     }
   },
 
   getUserDetails: async (id) => {
     try {
       const response = await api.get(`/complete/admin/users/${id}`);
-      const data = extractData(response);
-      return { data: { data: data || {} } };
+      return extractData(response) || {};
     } catch (error) {
       console.error('Get user details error:', error);
-      throw error;
+      return {};
     }
   },
 
   updateUser: async (id, data) => {
     try {
       const response = await api.put(`/complete/admin/users/${id}`, data);
-      return response;
+      return response.data;
     } catch (error) {
       console.error('Update user error:', error);
       throw error;
@@ -412,67 +330,65 @@ export const adminAPI = {
   deleteUser: async (id, reason) => {
     try {
       const response = await api.delete(`/complete/admin/users/${id}`, { data: { reason } });
-      return response;
+      return response.data;
     } catch (error) {
       console.error('Delete user error:', error);
       throw error;
     }
   },
 
-  // ✅ إدارة الطلبات - مُحسنة
+  // إدارة الطلبات
   getOrders: async (params) => {
     try {
       const response = await api.get('/aggregate/orders/admin', { params });
-      
-      const ordersData = extractData(response);
-      const pagination = extractPagination(response);
+      const data = extractData(response);
       
       let orders = [];
       let stats = {};
       let totalPages = 1;
       let total = 0;
       
-      if (Array.isArray(ordersData)) {
-        orders = ordersData;
-        total = ordersData.length;
-      } else if (ordersData && typeof ordersData === 'object') {
-        orders = ordersData.orders || ordersData.data || ordersData.items || [];
-        stats = ordersData.stats || {};
-        total = ordersData.total || orders.length;
-        totalPages = ordersData.totalPages || pagination?.totalPages || 1;
+      if (Array.isArray(data)) {
+        orders = data;
+        total = data.length;
+      } else if (data && typeof data === 'object') {
+        orders = data.orders || data.data || data.items || [];
+        stats = data.stats || {};
+        total = data.total || orders.length;
+        totalPages = data.totalPages || 1;
       }
       
       return {
-        data: {
-          data: {
-            orders,
-            stats,
-            totalPages,
-            total
-          }
-        }
+        orders,
+        stats,
+        totalPages,
+        total,
       };
     } catch (error) {
       console.error('Get orders error:', error);
-      throw error;
+      return {
+        orders: [],
+        stats: {},
+        totalPages: 1,
+        total: 0,
+      };
     }
   },
 
   getOrderDetails: async (id) => {
     try {
       const response = await api.get(`/aggregate/orders/${id}/full`);
-      const data = extractData(response);
-      return { data: { data: data || {} } };
+      return extractData(response) || {};
     } catch (error) {
       console.error('Get order details error:', error);
-      throw error;
+      return {};
     }
   },
 
   reassignDriver: async (orderId, driverId) => {
     try {
       const response = await api.put(`/orders/${orderId}/reassign`, { driverId });
-      return response;
+      return response.data;
     } catch (error) {
       console.error('Reassign driver error:', error);
       throw error;
@@ -482,46 +398,44 @@ export const adminAPI = {
   updateOrderStatus: async (id, status) => {
     try {
       const response = await api.put(`/orders/${id}/status`, { status });
-      return response;
+      return response.data;
     } catch (error) {
       console.error('Update order status error:', error);
       throw error;
     }
   },
 
-  // ✅ إدارة العناصر - مُحسنة
+  // إدارة العناصر
   getItems: async (params) => {
     try {
       const response = await api.get('/items', { params });
-      
-      const itemsData = extractData(response);
-      const pagination = extractPagination(response);
+      const data = extractData(response);
       
       let items = [];
       let totalPages = 1;
       let total = 0;
       
-      if (Array.isArray(itemsData)) {
-        items = itemsData;
-        total = itemsData.length;
-      } else if (itemsData && typeof itemsData === 'object') {
-        items = itemsData.items || itemsData.data || [];
-        total = itemsData.total || items.length;
-        totalPages = itemsData.totalPages || pagination?.totalPages || 1;
+      if (Array.isArray(data)) {
+        items = data;
+        total = data.length;
+      } else if (data && typeof data === 'object') {
+        items = data.items || data.data || [];
+        total = data.total || items.length;
+        totalPages = data.totalPages || 1;
       }
       
       return {
-        data: {
-          data: {
-            items,
-            totalPages,
-            total
-          }
-        }
+        items,
+        totalPages,
+        total,
       };
     } catch (error) {
       console.error('Get items error:', error);
-      throw error;
+      return {
+        items: [],
+        totalPages: 1,
+        total: 0,
+      };
     }
   },
 
@@ -539,7 +453,7 @@ export const adminAPI = {
       const response = await api.post('/items', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      return response;
+      return response.data;
     } catch (error) {
       console.error('Create item error:', error);
       throw error;
@@ -560,7 +474,7 @@ export const adminAPI = {
       const response = await api.put(`/items/${id}`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      return response;
+      return response.data;
     } catch (error) {
       console.error('Update item error:', error);
       throw error;
@@ -570,115 +484,107 @@ export const adminAPI = {
   deleteItem: async (id) => {
     try {
       const response = await api.delete(`/items/${id}`);
-      return response;
+      return response.data;
     } catch (error) {
       console.error('Delete item error:', error);
       throw error;
     }
   },
 
-  // ✅ إدارة الإشعارات - مُحسنة
+  // إدارة الإشعارات
   getNotifications: async (params) => {
     try {
       const response = await api.get('/notifications', { params });
-      
-      const notificationsData = extractData(response);
-      const pagination = extractPagination(response);
+      const data = extractData(response);
       
       let items = [];
       let total = 0;
       
-      if (Array.isArray(notificationsData)) {
-        items = notificationsData;
-        total = notificationsData.length;
-      } else if (notificationsData && typeof notificationsData === 'object') {
-        items = notificationsData.items || notificationsData.data || [];
-        total = notificationsData.total || items.length;
+      if (Array.isArray(data)) {
+        items = data;
+        total = data.length;
+      } else if (data && typeof data === 'object') {
+        items = data.items || data.data || [];
+        total = data.total || items.length;
       }
       
       return {
-        data: {
-          data: {
-            items,
-            total,
-            delivered: notificationsData?.delivered || 0,
-            openRate: notificationsData?.openRate || 0,
-            clients: notificationsData?.clients || [],
-            drivers: notificationsData?.drivers || [],
-            restaurantOwners: notificationsData?.restaurantOwners || [],
-            allUsers: notificationsData?.allUsers || []
-          }
-        }
+        items,
+        total,
+        delivered: data?.delivered || 0,
+        openRate: data?.openRate || 0,
+        clients: data?.clients || [],
+        drivers: data?.drivers || [],
+        restaurantOwners: data?.restaurantOwners || [],
+        allUsers: data?.allUsers || [],
       };
     } catch (error) {
       console.error('Get notifications error:', error);
-      throw error;
+      return {
+        items: [],
+        total: 0,
+        delivered: 0,
+        openRate: 0,
+        clients: [],
+        drivers: [],
+        restaurantOwners: [],
+        allUsers: [],
+      };
     }
   },
 
   sendNotification: async (data) => {
     try {
       const response = await api.post('/notifications/send', data);
-      return response;
+      return response.data;
     } catch (error) {
       console.error('Send notification error:', error);
       throw error;
     }
   },
 
-  getNotificationStats: async (campaignId) => {
-    try {
-      const response = await api.get(`/notifications/campaign/${campaignId}/stats`);
-      return response;
-    } catch (error) {
-      console.error('Get notification stats error:', error);
-      throw error;
-    }
-  },
-
-  // ✅ إدارة المراجعات - مُحسنة
+  // إدارة المراجعات
   getReviews: async (params) => {
     try {
       const response = await api.get('/reviews', { params });
-      
-      const reviewsData = extractData(response);
-      const pagination = extractPagination(response);
+      const data = extractData(response);
       
       let reviews = [];
       let stats = {};
       let totalPages = 1;
       let total = 0;
       
-      if (Array.isArray(reviewsData)) {
-        reviews = reviewsData;
-        total = reviewsData.length;
-      } else if (reviewsData && typeof reviewsData === 'object') {
-        reviews = reviewsData.reviews || reviewsData.data || reviewsData.items || [];
-        stats = reviewsData.stats || {};
-        total = reviewsData.total || reviews.length;
-        totalPages = reviewsData.totalPages || pagination?.totalPages || 1;
+      if (Array.isArray(data)) {
+        reviews = data;
+        total = data.length;
+      } else if (data && typeof data === 'object') {
+        reviews = data.reviews || data.data || data.items || [];
+        stats = data.stats || {};
+        total = data.total || reviews.length;
+        totalPages = data.totalPages || 1;
       }
       
       return {
-        data: {
-          data: {
-            reviews,
-            stats,
-            totalPages,
-            total
-          }
-        }
+        reviews,
+        stats,
+        totalPages,
+        total,
       };
     } catch (error) {
       console.error('Get reviews error:', error);
-      throw error;
+      return {
+        reviews: [],
+        stats: {},
+        totalPages: 1,
+        total: 0,
+      };
     }
   },
 
   deleteReview: async (id) => {
     try {
       const response = await api.delete(`/reviews/${id}`);
-      return response;
+      return response.data;
     } catch (error) {
       console.error('Delete review error:', error);
       throw error;
@@ -688,95 +594,83 @@ export const adminAPI = {
   moderateReview: async (id, data) => {
     try {
       const response = await api.put(`/reviews/${id}/moderate`, data);
-      return response;
+      return response.data;
     } catch (error) {
       console.error('Moderate review error:', error);
       throw error;
     }
   },
 
-  // ✅ الدعم الفني - مُحسن
+  // الدعم الفني
   getSupportConversations: async (params) => {
     try {
       const response = await api.get('/chat/admin/support-conversations', { params });
-      
-      const conversationsData = extractData(response);
+      const data = extractData(response);
       
       let conversations = [];
       
-      if (Array.isArray(conversationsData)) {
-        conversations = conversationsData;
-      } else if (conversationsData && typeof conversationsData === 'object') {
-        conversations = conversationsData.conversations || 
-                       conversationsData.data || 
-                       conversationsData.items || [];
+      if (Array.isArray(data)) {
+        conversations = data;
+      } else if (data && typeof data === 'object') {
+        conversations = data.conversations || data.data || data.items || [];
       }
       
-      return { data: { data: conversations } };
+      return conversations;
     } catch (error) {
       console.error('Failed to fetch support conversations:', error);
-      throw error;
+      return [];
     }
   },
 
   assignSupportConversation: async (id, userId) => {
     try {
       const response = await api.put(`/chat/admin/conversations/${id}/assign`, { assignedTo: userId });
-      return response;
+      return response.data;
     } catch (error) {
       console.error('Assign conversation error:', error);
       throw error;
     }
   },
 
-  // ✅ تتبع المندوبين
+  // تتبع المندوبين
   getDriverLocation: async (orderId) => {
     try {
       const response = await api.get(`/orders/${orderId}/location`);
-      return response;
+      return extractData(response);
     } catch (error) {
       console.error('Get driver location error:', error);
-      throw error;
+      return null;
     }
   },
 
-  // ✅ إحصائيات الطلبات - مُحسنة
+  // إحصائيات الطلبات
   getOrdersStats: async (params) => {
     try {
       const response = await api.get('/orders/stats', { params });
-      
-      const statsData = extractData(response);
+      const data = extractData(response);
       
       return {
-        data: {
-          data: statsData || {
-            dailyStats: [],
-            statusDistribution: [],
-            userGrowth: [],
-            topRestaurants: []
-          }
-        }
+        dailyStats: data?.dailyStats || [],
+        statusDistribution: data?.statusDistribution || [],
+        userGrowth: data?.userGrowth || [],
+        topRestaurants: data?.topRestaurants || [],
       };
     } catch (error) {
       console.log('Orders stats endpoint not available');
       return {
-        data: {
-          data: {
-            dailyStats: [],
-            statusDistribution: [],
-            userGrowth: [],
-            topRestaurants: []
-          }
-        }
+        dailyStats: [],
+        statusDistribution: [],
+        userGrowth: [],
+        topRestaurants: [],
       };
     }
   },
 
-  // ✅ الإعدادات
+  // الإعدادات
   updateSettings: async (data) => {
     try {
       const response = await api.put('/admin/settings', data);
-      return response;
+      return response.data;
     } catch (error) {
       console.error('Update settings error:', error);
       throw error;
@@ -786,12 +680,56 @@ export const adminAPI = {
   clearCache: async () => {
     try {
       const response = await api.post('/aggregate/cache/clear');
-      return response;
+      return response.data;
     } catch (error) {
       console.error('Clear cache error:', error);
       throw error;
     }
   },
+};
+
+// ✅ دالة التحقق من صحة التوكن
+export const validateToken = async () => {
+  try {
+    const token = getToken();
+    if (!token) {
+      return false;
+    }
+
+    const response = await api.get('/auth/validate');
+    const data = extractData(response);
+    return data?.valid || data?.success || false;
+  } catch (error) {
+    console.error('Token validation failed:', error);
+    return false;
+  }
+};
+
+// ✅ دالة تجديد التوكن
+export const refreshToken = async () => {
+  try {
+    const refreshToken = localStorage.getItem('refreshToken');
+    if (!refreshToken) {
+      throw new Error('No refresh token');
+    }
+
+    const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
+      refreshToken,
+    });
+
+    const data = extractData({ data: response.data });
+    const { accessToken, refreshToken: newRefreshToken } = data;
+
+    updateToken(accessToken);
+    if (newRefreshToken) {
+      localStorage.setItem('refreshToken', newRefreshToken);
+    }
+
+    return accessToken;
+  } catch (error) {
+    console.error('Token refresh failed:', error);
+    throw error;
+  }
 };
 
 export default api;

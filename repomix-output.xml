@@ -43,6 +43,7 @@ The content is organized as follows:
 .env.example
 .gitignore
 package.json
+public/_redirects
 public/favicon.ico
 public/index.html
 public/logo192.png
@@ -64,6 +65,7 @@ src/components/admin/SupportChat.jsx
 src/components/admin/UsersManagement.jsx
 src/components/auth/Login.jsx
 src/components/charts/DashboardCharts.jsx
+src/components/common/ErrorBoundary.jsx
 src/components/common/Header.jsx
 src/components/common/Layout.jsx
 src/components/common/Modal.jsx
@@ -175,50 +177,8 @@ yarn-error.log*
 }
 </file>
 
-<file path="public/index.html">
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
-    <meta
-      name="description"
-      content="Web site created using create-react-app"
-    />
-    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
-    <!--
-      manifest.json provides metadata used when your web app is installed on a
-      user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
-    -->
-    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
-    <!--
-      Notice the use of %PUBLIC_URL% in the tags above.
-      It will be replaced with the URL of the `public` folder during the build.
-      Only files inside the `public` folder can be referenced from the HTML.
-
-      Unlike "/favicon.ico" or "favicon.ico", "%PUBLIC_URL%/favicon.ico" will
-      work correctly both with client-side routing and a non-root public URL.
-      Learn how to configure a non-root public URL by running `npm run build`.
-    -->
-    <title>React App</title>
-  </head>
-  <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="root"></div>
-    <!--
-      This HTML file is a template.
-      If you open it directly in the browser, you will see an empty page.
-
-      You can add webfonts, meta tags, or analytics to this file.
-      The build step will place the bundled scripts into the <body> tag.
-
-      To begin the development, run `npm start` or `yarn start`.
-      To create a production bundle, use `npm run build` or `yarn build`.
-    -->
-  </body>
-</html>
+<file path="public/_redirects">
+/*  /index.html  200
 </file>
 
 <file path="public/manifest.json">
@@ -329,124 +289,6 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/d
 ### `npm run build` fails to minify
 
 This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
-</file>
-
-<file path="src/App.js">
-import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import { Toaster } from 'react-hot-toast';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { SocketProvider } from './contexts/SocketContext';
-import ProtectedRoute from './components/common/ProtectedRoute';
-import Layout from './components/common/Layout';
-import Login from './components/auth/Login';
-import Dashboard from './components/admin/Dashboard';
-import UsersManagement from './components/admin/UsersManagement';
-import RestaurantsManagement from './components/admin/RestaurantsManagement';
-import OrdersManagement from './components/admin/OrdersManagement';
-import ItemsManagement from './components/admin/ItemsManagement';
-import NotificationsManagement from './components/admin/NotificationsManagement';
-import ReviewsManagement from './components/admin/ReviewsManagement';
-import SupportChat from './components/admin/SupportChat';
-import DriverTracking from './components/admin/DriverTracking';
-import Statistics from './components/admin/Statistics';
-import Settings from './components/admin/Settings';
-
-// ✅ استيراد جميع ملفات CSS
-import './i18n';
-import './styles/variables.css';
-import './styles/global.css';
-import './styles/auth.css';
-import './styles/modal.css';
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 1,
-      refetchOnWindowFocus: false,
-      staleTime: 5 * 60 * 1000,
-      cacheTime: 10 * 60 * 1000,
-    },
-  },
-});
-
-function AppRoutes() {
-  const { isAuthenticated } = useAuth();
-
-  return (
-    <Routes>
-      <Route path="/login" element={
-        isAuthenticated ? <Navigate to="/admin/dashboard" /> : <Login />
-      } />
-      
-      <Route path="/admin" element={
-        <ProtectedRoute requiredRole="admin">
-          <Layout />
-        </ProtectedRoute>
-      }>
-        <Route index element={<Navigate to="dashboard" />} />
-        <Route path="dashboard" element={<Dashboard />} />
-        <Route path="users" element={<UsersManagement />} />
-        <Route path="restaurants" element={<RestaurantsManagement />} />
-        <Route path="orders" element={<OrdersManagement />} />
-        <Route path="items" element={<ItemsManagement />} />
-        <Route path="notifications" element={<NotificationsManagement />} />
-        <Route path="reviews" element={<ReviewsManagement />} />
-        <Route path="support" element={<SupportChat />} />
-        <Route path="tracking" element={<DriverTracking />} />
-        <Route path="statistics" element={<Statistics />} />
-        <Route path="settings" element={<Settings />} />
-      </Route>
-      
-      <Route path="/unauthorized" element={
-        <div style={{ textAlign: 'center', marginTop: '50px' }}>
-          <h1>غير مصرح بالوصول</h1>
-          <p>ليس لديك صلاحية للوصول إلى هذه الصفحة</p>
-          <button onClick={() => window.location.href = '/admin/dashboard'} className="btn btn-primary">
-            العودة للرئيسية
-          </button>
-        </div>
-      } />
-      
-      <Route path="*" element={<Navigate to="/admin" />} />
-    </Routes>
-  );
-}
-
-function App() {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <AuthProvider>
-          <SocketProvider>
-            <AppRoutes />
-            <Toaster
-              position="top-center"
-              toastOptions={{
-                duration: 4000,
-                className: 'toast',
-                success: {
-                  className: 'toast-success',
-                },
-                error: {
-                  className: 'toast-error',
-                },
-                loading: {
-                  className: 'toast-info',
-                },
-              }}
-            />
-          </SocketProvider>
-        </AuthProvider>
-      </BrowserRouter>
-      <ReactQueryDevtools initialIsOpen={false} />
-    </QueryClientProvider>
-  );
-}
-
-export default App;
 </file>
 
 <file path="src/components/admin/Dashboard.jsx">
@@ -2197,17 +2039,15 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminAPI } from '../../services/api';
 import {
   FaStore,
-  FaEdit,
   FaTrash,
   FaPlus,
-  FaImage,
-  FaClock,
   FaMapMarkerAlt,
+  FaClock,
   FaTag,
   FaStar,
-  FaToggleOn,
-  FaToggleOff,
   FaSearch,
+  FaExclamationCircle,
+  FaSyncAlt,
 } from 'react-icons/fa';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
@@ -2220,21 +2060,22 @@ const RestaurantsManagement = () => {
   const [search, setSearch] = useState('');
   const [selectedRestaurant, setSelectedRestaurant] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [showAddModal, setShowAddModal] = useState(false);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error, refetch, isFetching } = useQuery({
     queryKey: ['restaurants', page, search],
     queryFn: () => adminAPI.getRestaurants({
       page,
       limit: 10,
       search,
     }),
+    keepPreviousData: true, // الاحتفاظ بالبيانات السابقة أثناء التحميل
   });
 
   // ✅ استخراج البيانات بشكل آمن
   const restaurantsData = data?.data?.data || {};
   const restaurants = restaurantsData.restaurants || [];
   const totalPages = restaurantsData.totalPages || 1;
+  const totalRestaurants = restaurantsData.total || 0;
 
   const deleteRestaurantMutation = useMutation({
     mutationFn: (id) => adminAPI.deleteRestaurant(id),
@@ -2243,12 +2084,55 @@ const RestaurantsManagement = () => {
       toast.success(t('restaurant_deleted_success'));
       setShowDeleteModal(false);
     },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || t('error_deleting_restaurant'));
+    },
   });
+
+  // ✅ معالجة حالة التحميل
+  if (isLoading) {
+    return (
+      <div className="loading-container">
+        <div className="spinner"></div>
+        <p>{t('loading_restaurants')}</p>
+      </div>
+    );
+  }
+
+  // ✅ معالجة حالة الخطأ
+  if (error) {
+    return (
+      <div className="error-container">
+        <FaExclamationCircle className="error-icon" />
+        <h3>{t('error_loading_restaurants')}</h3>
+        <p>{error.response?.data?.message || error.message || t('try_again_later')}</p>
+        <button onClick={() => refetch()} className="btn btn-primary" disabled={isFetching}>
+          <FaSyncAlt className={isFetching ? 'spin' : ''} /> {t('retry')}
+        </button>
+      </div>
+    );
+  }
+
+  const handleDelete = (restaurant) => {
+    setSelectedRestaurant(restaurant);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = () => {
+    if (selectedRestaurant) {
+      deleteRestaurantMutation.mutate(selectedRestaurant.id);
+    }
+  };
 
   return (
     <div className="restaurants-management">
       <div className="page-header">
-        <h1>{t('restaurants_management')}</h1>
+        <div>
+          <h1>{t('restaurants_management')}</h1>
+          {totalRestaurants > 0 && (
+            <p className="total-count">{t('total_restaurants')}: {totalRestaurants}</p>
+          )}
+        </div>
         <button onClick={() => setShowAddModal(true)} className="btn btn-primary">
           <FaPlus /> {t('add_restaurant')}
         </button>
@@ -2265,59 +2149,108 @@ const RestaurantsManagement = () => {
             className="form-control"
           />
         </div>
+        <div className="filter-actions">
+          <button 
+            onClick={() => refetch()} 
+            className="btn btn-secondary"
+            disabled={isFetching}
+          >
+            <FaSyncAlt className={isFetching ? 'spin' : ''} /> {t('refresh')}
+          </button>
+        </div>
       </div>
 
-      <div className="restaurants-grid">
-        {restaurants.map((restaurant) => (
-          <div key={restaurant.id} className="restaurant-card">
-            <div className="restaurant-image">
-              <img 
-                src={restaurant.image || '/default-restaurant.jpg'} 
-                alt={restaurant.name} 
-              />
-              <div className="restaurant-status">
-                <span className={`status-badge ${restaurant.isOpen ? 'status-open' : 'status-closed'}`}>
-                  {restaurant.isOpen ? t('open') : t('closed')}
-                </span>
-              </div>
-            </div>
-            
-            <div className="restaurant-info">
-              <h3>{restaurant.name}</h3>
-              <div className="restaurant-meta">
-                <span className="restaurant-type">
-                  <FaTag /> {t(restaurant.type || 'restaurant')}
-                </span>
-                <span className="restaurant-rating">
-                  <FaStar className="star" /> {restaurant.rating || '0.0'}
-                </span>
-              </div>
-              
-              <div className="restaurant-details">
-                <p className="restaurant-address">
-                  <FaMapMarkerAlt /> {restaurant.addresses?.[0]?.addressLine || t('no_address')}
-                </p>
-                <p className="restaurant-delivery">
-                  <FaClock /> {t('delivery_time')}: {restaurant.estimatedDeliveryTime || '30-45'} {t('min')}
-                </p>
-              </div>
+      {restaurants.length === 0 ? (
+        <div className="empty-state">
+          <FaStore className="icon" />
+          <h3>{t('no_restaurants_found')}</h3>
+          <p>{search ? t('try_different_search') : t('add_first_restaurant')}</p>
+          {!search && (
+            <button onClick={() => setShowAddModal(true)} className="btn btn-primary">
+              <FaPlus /> {t('add_restaurant')}
+            </button>
+          )}
+        </div>
+      ) : (
+        <>
+          <div className="restaurants-grid">
+            {restaurants.map((restaurant) => (
+              <div key={restaurant.id} className="restaurant-card">
+                <div className="restaurant-image">
+                  <img 
+                    src={restaurant.image || '/default-restaurant.jpg'} 
+                    alt={restaurant.name}
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = '/default-restaurant.jpg';
+                    }}
+                  />
+                  <div className="restaurant-status">
+                    <span className={`status-badge ${restaurant.isOpen ? 'status-open' : 'status-closed'}`}>
+                      {restaurant.isOpen ? t('open') : t('closed')}
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="restaurant-info">
+                  <h3>{restaurant.name}</h3>
+                  <div className="restaurant-meta">
+                    <span className="restaurant-type">
+                      <FaTag /> {t(restaurant.type || 'restaurant')}
+                    </span>
+                    <span className="restaurant-rating">
+                      <FaStar className="star" /> {restaurant.rating?.toFixed(1) || '0.0'}
+                    </span>
+                  </div>
+                  
+                  <div className="restaurant-details">
+                    <p className="restaurant-address">
+                      <FaMapMarkerAlt /> {restaurant.addresses?.[0]?.addressLine || t('no_address')}
+                    </p>
+                    <p className="restaurant-delivery">
+                      <FaClock /> {t('delivery_time')}: {restaurant.estimatedDeliveryTime || '30-45'} {t('min')}
+                    </p>
+                  </div>
 
-              <div className="restaurant-actions">
-                <button
-                  onClick={() => {
-                    setSelectedRestaurant(restaurant);
-                    setShowDeleteModal(true);
-                  }}
-                  className="btn-icon delete"
-                  title={t('delete')}
-                >
-                  <FaTrash />
-                </button>
+                  <div className="restaurant-actions">
+                    <button
+                      onClick={() => handleDelete(restaurant)}
+                      className="btn-icon delete"
+                      title={t('delete')}
+                      disabled={deleteRestaurantMutation.isLoading}
+                    >
+                      <FaTrash />
+                    </button>
+                  </div>
+                </div>
               </div>
-            </div>
+            ))}
           </div>
-        ))}
-      </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="pagination">
+              <button
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1 || isFetching}
+                className="btn btn-secondary"
+              >
+                {t('previous')}
+              </button>
+              <span className="page-info">
+                {t('page')} {page} {t('of')} {totalPages}
+              </span>
+              <button
+                onClick={() => setPage(p => p + 1)}
+                disabled={page === totalPages || isFetching}
+                className="btn btn-secondary"
+              >
+                {t('next')}
+              </button>
+            </div>
+          )}
+        </>
+      )}
 
       {/* Delete Modal */}
       {showDeleteModal && (
@@ -2325,44 +2258,36 @@ const RestaurantsManagement = () => {
           title={t('delete_restaurant')}
           onClose={() => setShowDeleteModal(false)}
         >
-          <p>{t('delete_restaurant_confirmation', { name: selectedRestaurant?.name })}</p>
+          <div className="delete-confirmation">
+            <FaExclamationCircle className="warning-icon" />
+            <p>{t('delete_restaurant_confirmation', { name: selectedRestaurant?.name })}</p>
+            <p className="warning-text">{t('delete_restaurant_warning')}</p>
+          </div>
           <div className="modal-actions">
             <button
-              onClick={() => deleteRestaurantMutation.mutate(selectedRestaurant.id)}
+              onClick={confirmDelete}
               className="btn btn-danger"
+              disabled={deleteRestaurantMutation.isLoading}
             >
-              {t('confirm_delete')}
+              {deleteRestaurantMutation.isLoading ? (
+                <>
+                  <span className="spinner-small"></span>
+                  {t('deleting')}
+                </>
+              ) : (
+                t('confirm_delete')
+              )}
             </button>
             <button
               onClick={() => setShowDeleteModal(false)}
               className="btn btn-secondary"
+              disabled={deleteRestaurantMutation.isLoading}
             >
               {t('cancel')}
             </button>
           </div>
         </Modal>
       )}
-
-      {/* Pagination */}
-      <div className="pagination">
-        <button
-          onClick={() => setPage(p => Math.max(1, p - 1))}
-          disabled={page === 1}
-          className="btn btn-secondary"
-        >
-          {t('previous')}
-        </button>
-        <span className="page-info">
-          {t('page')} {page} {t('of')} {totalPages}
-        </span>
-        <button
-          onClick={() => setPage(p => p + 1)}
-          disabled={page === totalPages}
-          className="btn btn-secondary"
-        >
-          {t('next')}
-        </button>
-      </div>
     </div>
   );
 };
@@ -4086,226 +4011,6 @@ const UsersManagement = () => {
 export default UsersManagement;
 </file>
 
-<file path="src/components/auth/Login.jsx">
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
-import { FaEnvelope, FaLock, FaPhone, FaUser } from 'react-icons/fa';
-import { useTranslation } from 'react-i18next';
-import toast from 'react-hot-toast';
-
-const Login = () => {
-  const { t } = useTranslation();
-  const navigate = useNavigate();
-  const { login } = useAuth();
-  const [isLoginMode, setIsLoginMode] = useState(true);
-  const [formData, setFormData] = useState({
-    phone: '',
-    email: '',
-    password: '',
-    name: '',
-    confirmPassword: '',
-  });
-  const [loading, setLoading] = useState(false);
-
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-
-    try {
-      if (isLoginMode) {
-        // تسجيل الدخول
-        const credentials = formData.email 
-          ? { email: formData.email, password: formData.password }
-          : { phone: formData.phone, password: formData.password };
-        
-        const result = await login(credentials);
-        
-        if (result.success) {
-          // ✅ التأكد من وجود user والـ role
-          if (result.user && result.user.role === 'admin') {
-            navigate('/admin/dashboard');
-            toast.success(t('login_success'));
-          } else {
-            toast.error(t('unauthorized_access'));
-            // تسجيل الخروج لأن المستخدم ليس أدمن
-            setTimeout(() => {
-              window.location.href = '/login';
-            }, 2000);
-          }
-        }
-      } else {
-        // تسجيل جديد
-        if (formData.password !== formData.confirmPassword) {
-          toast.error(t('passwords_dont_match'));
-          setLoading(false);
-          return;
-        }
-
-        const response = await fetch('https://backend-walid-yahaya.onrender.com/api/auth/register/complete', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            name: formData.name,
-            phone: formData.phone,
-            email: formData.email || undefined,
-            password: formData.password,
-            role: 'admin', // ✅ محاولة تسجيل كأدمن
-          }),
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-          toast.success(t('registration_success'));
-          setIsLoginMode(true);
-          // ✅ تعبئة رقم الهاتف تلقائياً
-          setFormData({
-            ...formData,
-            password: '',
-            confirmPassword: '',
-          });
-        } else {
-          toast.error(data.message || t('registration_failed'));
-        }
-      }
-    } catch (error) {
-      console.error('Auth error:', error);
-      toast.error(t('auth_error'));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="auth-container">
-      <div className="auth-card">
-        <div className="auth-header">
-          <img src="/logo.png" alt="Logo" className="auth-logo" />
-          <h1>{t('delivery_admin')}</h1>
-          <p>{isLoginMode ? t('welcome_back') : t('create_account')}</p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="auth-form">
-          {!isLoginMode && (
-            <div className="form-group">
-              <div className="input-icon">
-                <FaUser />
-                <input
-                  type="text"
-                  name="name"
-                  placeholder={t('full_name')}
-                  value={formData.name}
-                  onChange={handleChange}
-                  required
-                  className="form-control"
-                />
-              </div>
-            </div>
-          )}
-
-          <div className="form-group">
-            <div className="input-icon">
-              <FaPhone />
-              <input
-                type="tel"
-                name="phone"
-                placeholder={t('phone_number')}
-                value={formData.phone}
-                onChange={handleChange}
-                required={!formData.email}
-                className="form-control"
-              />
-            </div>
-          </div>
-
-          <div className="form-group">
-            <div className="input-icon">
-              <FaEnvelope />
-              <input
-                type="email"
-                name="email"
-                placeholder={t('email_optional')}
-                value={formData.email}
-                onChange={handleChange}
-                className="form-control"
-              />
-            </div>
-          </div>
-
-          <div className="form-group">
-            <div className="input-icon">
-              <FaLock />
-              <input
-                type="password"
-                name="password"
-                placeholder={t('password')}
-                value={formData.password}
-                onChange={handleChange}
-                required
-                className="form-control"
-              />
-            </div>
-          </div>
-
-          {!isLoginMode && (
-            <div className="form-group">
-              <div className="input-icon">
-                <FaLock />
-                <input
-                  type="password"
-                  name="confirmPassword"
-                  placeholder={t('confirm_password')}
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  required
-                  className="form-control"
-                />
-              </div>
-            </div>
-          )}
-
-          <button 
-            type="submit" 
-            className="btn btn-primary btn-block"
-            disabled={loading}
-          >
-            {loading ? (
-              <span className="spinner-small"></span>
-            ) : isLoginMode ? (
-              t('login')
-            ) : (
-              t('register')
-            )}
-          </button>
-        </form>
-
-        <div className="auth-footer">
-          <button
-            type="button"
-            onClick={() => setIsLoginMode(!isLoginMode)}
-            className="btn-link"
-          >
-            {isLoginMode ? t('need_account') : t('have_account')}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default Login;
-</file>
-
 <file path="src/components/charts/DashboardCharts.jsx">
 import React from 'react';
 import {
@@ -4464,8 +4169,83 @@ const DashboardCharts = ({ data }) => {
 export default DashboardCharts;
 </file>
 
+<file path="src/components/common/ErrorBoundary.jsx">
+import React from 'react';
+import { FaExclamationTriangle } from 'react-icons/fa';
+
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { 
+      hasError: false, 
+      error: null,
+      errorInfo: null 
+    };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('Error caught by boundary:', error, errorInfo);
+    this.setState({ errorInfo });
+    
+    // يمكن إرسال الخطأ إلى خدمة مراقبة مثل Sentry هنا
+    // if (window.Sentry) {
+    //   window.Sentry.captureException(error, { extra: errorInfo });
+    // }
+  }
+
+  handleReload = () => {
+    window.location.reload();
+  };
+
+  handleGoHome = () => {
+    window.location.href = '/admin/dashboard';
+  };
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="error-boundary-container">
+          <div className="error-boundary-card">
+            <div className="error-icon">
+              <FaExclamationTriangle />
+            </div>
+            <h2>عذراً، حدث خطأ غير متوقع</h2>
+            <p className="error-message">
+              {this.state.error?.message || 'نأسف للإزعاج، يرجى المحاولة مرة أخرى'}
+            </p>
+            {process.env.NODE_ENV === 'development' && this.state.errorInfo && (
+              <details className="error-details">
+                <summary>تفاصيل الخطأ (للمطورين)</summary>
+                <pre>{this.state.error?.stack}</pre>
+                <pre>{this.state.errorInfo?.componentStack}</pre>
+              </details>
+            )}
+            <div className="error-actions">
+              <button onClick={this.handleReload} className="btn btn-primary">
+                تحديث الصفحة
+              </button>
+              <button onClick={this.handleGoHome} className="btn btn-secondary">
+                العودة للرئيسية
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+export default ErrorBoundary;
+</file>
+
 <file path="src/components/common/Header.jsx">
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   FaBell,
@@ -4474,36 +4254,38 @@ import {
   FaCog,
   FaSignOutAlt,
   FaGlobe,
-  FaMoon,
-  FaSun,
   FaBars,
   FaSearch,
-  FaTachometerAlt,
-  FaStore,
-  FaShoppingBag,
-  FaHamburger,
-  FaStar,
-  FaHeadset,
   FaChevronDown,
   FaUserCircle,
   FaHistory,
+  FaWifi,
+  FaExclamationCircle,
+  FaShoppingBag,
+  FaStore,
   FaLock,
 } from 'react-icons/fa';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSocket } from '../../contexts/SocketContext';
 
-const Header = ({ user, toggleSidebar }) => {
+const Header = ({ toggleSidebar }) => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const { logout } = useAuth();
-  const { notifications, onlineUsers } = useSocket();
+  const { user, logout } = useAuth();
+  const { onlineUsers, notifications, isConnected } = useSocket();
   
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
+  const [unreadMessages, setUnreadMessages] = useState(0);
+  
+  // Refs للقوائم المنسدلة
+  const notificationRef = useRef(null);
+  const profileRef = useRef(null);
+  const languageRef = useRef(null);
 
   // تحديث الوقت كل دقيقة
   useEffect(() => {
@@ -4513,26 +4295,57 @@ const Header = ({ user, toggleSidebar }) => {
     return () => clearInterval(timer);
   }, []);
 
-  const unreadNotifications = notifications?.filter(n => !n.read)?.length || 0;
-  const unreadMessages = 0; // سيتم جلبها من الـ API
+  // إغلاق القوائم المنسدلة عند النقر خارجها
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (notificationRef.current && !notificationRef.current.contains(event.target)) {
+        setShowNotifications(false);
+      }
+      if (profileRef.current && !profileRef.current.contains(event.target)) {
+        setShowProfileMenu(false);
+      }
+      if (languageRef.current && !languageRef.current.contains(event.target)) {
+        setShowLanguageMenu(false);
+      }
+    };
 
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // عدد الإشعارات غير المقروءة
+  const unreadNotifications = notifications?.filter(n => !n.read)?.length || 0;
+
+  // تبديل اللغة
   const toggleLanguage = (lang) => {
     i18n.changeLanguage(lang);
     document.dir = lang === 'ar' ? 'rtl' : 'ltr';
     localStorage.setItem('language', lang);
     setShowLanguageMenu(false);
+    
+    // إعادة تحميل الصفحة لتطبيق التغييرات على المكونات الخارجية
+    if (lang !== i18n.language) {
+      window.location.reload();
+    }
   };
 
+  // تسجيل الخروج
   const handleLogout = async () => {
-    await logout();
-    navigate('/login');
+    try {
+      await logout();
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
   };
 
+  // البحث
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
       navigate(`/admin/search?q=${encodeURIComponent(searchQuery)}`);
       setSearchQuery('');
+      setShowProfileMenu(false);
     }
   };
 
@@ -4549,15 +4362,97 @@ const Header = ({ user, toggleSidebar }) => {
     minute: '2-digit'
   });
 
+  // حساب الوقت المنقضي
+  const timeAgo = (date) => {
+    if (!date) return '';
+    
+    const seconds = Math.floor((new Date() - new Date(date)) / 1000);
+    
+    if (seconds < 60) return i18n.language === 'ar' ? 'الآن' : 'now';
+    
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) {
+      return i18n.language === 'ar' ? `منذ ${minutes} دقيقة` : `${minutes} minutes ago`;
+    }
+    
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) {
+      return i18n.language === 'ar' ? `منذ ${hours} ساعة` : `${hours} hours ago`;
+    }
+    
+    const days = Math.floor(hours / 24);
+    return i18n.language === 'ar' ? `منذ ${days} يوم` : `${days} days ago`;
+  };
+
+  // أيقونة الإشعار حسب النوع
+  const getNotificationIcon = (type) => {
+    switch(type) {
+      case 'order': return <FaShoppingBag />;
+      case 'restaurant': return <FaStore />;
+      case 'user': return <FaUser />;
+      case 'system': return <FaLock />;
+      default: return <FaBell />;
+    }
+  };
+
+  // لون الإشعار حسب النوع
+  const getNotificationColor = (type) => {
+    switch(type) {
+      case 'order': return 'rgba(52, 152, 219, 0.1)';
+      case 'restaurant': return 'rgba(46, 204, 113, 0.1)';
+      case 'user': return 'rgba(155, 89, 182, 0.1)';
+      case 'system': return 'rgba(241, 196, 15, 0.1)';
+      default: return 'rgba(52, 152, 219, 0.1)';
+    }
+  };
+
+  // عرض الإشعارات
+  const renderNotifications = () => {
+    if (!notifications || notifications.length === 0) {
+      return (
+        <div className="empty-state">
+          <FaBell className="icon" />
+          <p>{t('no_notifications')}</p>
+        </div>
+      );
+    }
+
+    return notifications.slice(0, 5).map((notification, index) => (
+      <div 
+        key={notification.id || index} 
+        className={`notification-item ${!notification.read ? 'unread' : ''}`}
+        onClick={() => {
+          if (notification.link) {
+            navigate(notification.link);
+          }
+          setShowNotifications(false);
+        }}
+      >
+        <div className="notification-icon" style={{ background: getNotificationColor(notification.type) }}>
+          {getNotificationIcon(notification.type)}
+        </div>
+        <div className="notification-content">
+          <p className="notification-title">{notification.title || t('notification')}</p>
+          <p className="notification-message">{notification.message || notification.content}</p>
+          <span className="notification-time">
+            {timeAgo(notification.createdAt)}
+          </span>
+        </div>
+      </div>
+    ));
+  };
+
   return (
     <header className="admin-header">
       <div className="header-left">
-        <button className="menu-toggle" onClick={toggleSidebar}>
+        <button className="menu-toggle" onClick={toggleSidebar} aria-label="Toggle menu">
           <FaBars />
         </button>
         
         <div className="header-greeting">
-          <h2>{t('welcome_back')}, {user?.name?.split(' ')[0] || 'Admin'}!</h2>
+          <h2>
+            {t('welcome_back')}, <span>{user?.name?.split(' ')[0] || 'Admin'}</span>
+          </h2>
           <span className="header-date">
             {formattedDate} | {formattedTime}
           </span>
@@ -4565,7 +4460,7 @@ const Header = ({ user, toggleSidebar }) => {
       </div>
 
       <div className="header-right">
-        {/* Search Bar */}
+        {/* Search Bar - سطح المكتب فقط */}
         <form className="header-search" onSubmit={handleSearch}>
           <FaSearch className="search-icon" />
           <input
@@ -4574,21 +4469,32 @@ const Header = ({ user, toggleSidebar }) => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="form-control"
+            aria-label="Search"
           />
         </form>
 
         {/* Online Users Indicator */}
-        <div className="online-indicator">
+        <div className="online-indicator" title={t('online_users')}>
           <span className="online-dot"></span>
           <span className="online-count">{onlineUsers?.length || 0}</span>
           <span className="online-label">{t('online')}</span>
         </div>
 
+        {/* Socket Connection Status - استخدام FaExclamationCircle بدلاً من FaWifiSlash */}
+        <div 
+          className={`connection-status ${isConnected ? 'connected' : 'disconnected'}`}
+          title={isConnected ? t('connected') : t('disconnected')}
+        >
+          {isConnected ? <FaWifi /> : <FaExclamationCircle />}
+        </div>
+
         {/* Language Selector */}
-        <div className="dropdown">
+        <div className="dropdown" ref={languageRef}>
           <button
             className="dropdown-toggle"
             onClick={() => setShowLanguageMenu(!showLanguageMenu)}
+            aria-label="Change language"
+            aria-expanded={showLanguageMenu}
           >
             <FaGlobe />
             <span className="dropdown-label">
@@ -4596,6 +4502,7 @@ const Header = ({ user, toggleSidebar }) => {
             </span>
             <FaChevronDown className="dropdown-arrow" />
           </button>
+          
           {showLanguageMenu && (
             <div className="dropdown-menu">
               <button
@@ -4617,16 +4524,19 @@ const Header = ({ user, toggleSidebar }) => {
         </div>
 
         {/* Notifications */}
-        <div className="dropdown">
+        <div className="dropdown" ref={notificationRef}>
           <button
             className="dropdown-toggle notification-btn"
             onClick={() => setShowNotifications(!showNotifications)}
+            aria-label="Notifications"
+            aria-expanded={showNotifications}
           >
             <FaBell />
             {unreadNotifications > 0 && (
-              <span className="badge">{unreadNotifications}</span>
+              <span className="badge">{unreadNotifications > 9 ? '9+' : unreadNotifications}</span>
             )}
           </button>
+          
           {showNotifications && (
             <div className="dropdown-menu notifications-menu">
               <div className="dropdown-header">
@@ -4635,65 +4545,55 @@ const Header = ({ user, toggleSidebar }) => {
                   {t('view_all')}
                 </Link>
               </div>
+              
               <div className="notifications-list">
-                {notifications && notifications.length > 0 ? (
-                  notifications.slice(0, 5).map((notification, index) => (
-                    <div key={index} className={`notification-item ${!notification.read ? 'unread' : ''}`}>
-                      <div className="notification-icon" style={{ background: getNotificationColor(notification.type) }}>
-                        {getNotificationIcon(notification.type)}
-                      </div>
-                      <div className="notification-content">
-                        <p className="notification-title">{notification.title}</p>
-                        <p className="notification-message">{notification.message}</p>
-                        <span className="notification-time">
-                          {timeAgo(notification.createdAt, i18n.language)}
-                        </span>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="empty-state">
-                    <FaBell className="icon" />
-                    <p>{t('no_notifications')}</p>
-                  </div>
-                )}
+                {renderNotifications()}
               </div>
-              <div className="dropdown-footer">
-                <Link to="/admin/notifications" onClick={() => setShowNotifications(false)}>
-                  {t('view_all_notifications')}
-                </Link>
-              </div>
+              
+              {notifications && notifications.length > 5 && (
+                <div className="dropdown-footer">
+                  <Link to="/admin/notifications" onClick={() => setShowNotifications(false)}>
+                    {t('view_all_notifications')}
+                  </Link>
+                </div>
+              )}
             </div>
           )}
         </div>
 
         {/* Messages */}
         <div className="dropdown">
-          <button className="dropdown-toggle message-btn">
+          <button 
+            className="dropdown-toggle message-btn"
+            onClick={() => navigate('/admin/support')}
+            aria-label="Messages"
+          >
             <FaEnvelope />
             {unreadMessages > 0 && (
-              <span className="badge">{unreadMessages}</span>
+              <span className="badge">{unreadMessages > 9 ? '9+' : unreadMessages}</span>
             )}
           </button>
         </div>
 
         {/* User Profile */}
-        <div className="dropdown">
+        <div className="dropdown" ref={profileRef}>
           <button
             className="dropdown-toggle user-menu"
             onClick={() => setShowProfileMenu(!showProfileMenu)}
+            aria-label="User menu"
+            aria-expanded={showProfileMenu}
           >
             <div className="user-avatar-wrapper">
               <img
                 src={user?.image || '/default-avatar.png'}
-                alt={user?.name}
+                alt={user?.name || 'User avatar'}
                 className="user-avatar"
                 onError={(e) => {
                   e.target.onerror = null;
                   e.target.src = '/default-avatar.png';
                 }}
               />
-              <span className="user-status online"></span>
+              <span className={`user-status ${isConnected ? 'online' : 'offline'}`}></span>
             </div>
             <div className="user-info">
               <span className="user-name">{user?.name || 'Admin User'}</span>
@@ -4724,17 +4624,17 @@ const Header = ({ user, toggleSidebar }) => {
               
               <div className="dropdown-divider"></div>
               
-              <Link to="/admin/profile" className="dropdown-item">
+              <Link to="/admin/profile" className="dropdown-item" onClick={() => setShowProfileMenu(false)}>
                 <FaUserCircle />
                 <span>{t('profile')}</span>
               </Link>
               
-              <Link to="/admin/settings" className="dropdown-item">
+              <Link to="/admin/settings" className="dropdown-item" onClick={() => setShowProfileMenu(false)}>
                 <FaCog />
                 <span>{t('settings')}</span>
               </Link>
               
-              <Link to="/admin/activity" className="dropdown-item">
+              <Link to="/admin/activity" className="dropdown-item" onClick={() => setShowProfileMenu(false)}>
                 <FaHistory />
                 <span>{t('activity_log')}</span>
               </Link>
@@ -4749,51 +4649,21 @@ const Header = ({ user, toggleSidebar }) => {
           )}
         </div>
       </div>
+
+      {/* Search Bar للجوال - يظهر فقط في الشاشات الصغيرة */}
+      <form className="mobile-search" onSubmit={handleSearch}>
+        <FaSearch className="search-icon" />
+        <input
+          type="text"
+          placeholder={t('search_placeholder')}
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="form-control"
+          aria-label="Search"
+        />
+      </form>
     </header>
   );
-};
-
-// دوال مساعدة للأيقونات
-const getNotificationIcon = (type) => {
-  switch(type) {
-    case 'order': return <FaShoppingBag />;
-    case 'restaurant': return <FaStore />;
-    case 'user': return <FaUser />;
-    case 'system': return <FaLock />;
-    default: return <FaBell />;
-  }
-};
-
-const getNotificationColor = (type) => {
-  switch(type) {
-    case 'order': return 'rgba(52, 152, 219, 0.1)';
-    case 'restaurant': return 'rgba(46, 204, 113, 0.1)';
-    case 'user': return 'rgba(155, 89, 182, 0.1)';
-    case 'system': return 'rgba(241, 196, 15, 0.1)';
-    default: return 'rgba(52, 152, 219, 0.1)';
-  }
-};
-
-// حساب الوقت المنقضي
-const timeAgo = (date, locale) => {
-  if (!date) return '';
-  
-  const seconds = Math.floor((new Date() - new Date(date)) / 1000);
-  
-  if (seconds < 60) return locale === 'ar' ? 'الآن' : 'now';
-  
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) {
-    return locale === 'ar' ? `منذ ${minutes} دقيقة` : `${minutes} minutes ago`;
-  }
-  
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) {
-    return locale === 'ar' ? `منذ ${hours} ساعة` : `${hours} hours ago`;
-  }
-  
-  const days = Math.floor(hours / 24);
-  return locale === 'ar' ? `منذ ${days} يوم` : `${days} days ago`;
 };
 
 export default Header;
@@ -5236,7 +5106,7 @@ export const AuthProvider = ({ children }) => {
 </file>
 
 <file path="src/contexts/SocketContext.jsx">
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import io from 'socket.io-client';
 import { useAuth } from './AuthContext';
 import toast from 'react-hot-toast';
@@ -5255,86 +5125,289 @@ export const SocketProvider = ({ children }) => {
   const [socket, setSocket] = useState(null);
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [notifications, setNotifications] = useState([]);
+  const [isConnected, setIsConnected] = useState(false);
+  const [reconnectAttempts, setReconnectAttempts] = useState(0);
+  
   const { user, isAuthenticated } = useAuth();
+  const socketRef = useRef(null);
+  const reconnectTimeoutRef = useRef(null);
+  const maxReconnectAttempts = 5;
 
-  useEffect(() => {
-    if (isAuthenticated && user) {
-      const newSocket = io('https://backend-walid-yahaya.onrender.com', {
-        auth: {
-          token: localStorage.getItem('accessToken'),
-        },
-        transports: ['websocket'],
-      });
-
-      setSocket(newSocket);
-
-      newSocket.on('connect', () => {
-        console.log('Socket connected');
-        newSocket.emit('user-online', user.id);
-      });
-
-      newSocket.on('notification', (notification) => {
-        setNotifications((prev) => [notification, ...prev]);
-        
-        // عرض إشعار للمستخدم
-        if (notification.priority === 'high') {
-          toast.success(notification.title, {
-            duration: 5000,
-            icon: '🔔',
-          });
-        }
-      });
-
-      newSocket.on('order-update', (order) => {
-        toast.info(`تحديث الطلب #${order.id}: ${order.status}`, {
-          duration: 4000,
-        });
-      });
-
-      newSocket.on('driver-location', (data) => {
-        // تحديث موقع المندوب على الخريطة
-        window.dispatchEvent(new CustomEvent('driver-location-update', { 
-          detail: data 
-        }));
-      });
-
-      newSocket.on('users-online', (users) => {
-        setOnlineUsers(users);
-      });
-
-      return () => {
-        newSocket.disconnect();
-      };
+  // دالة إنشاء اتصال السوكيت
+  const connectSocket = useCallback(() => {
+    if (!isAuthenticated || !user) {
+      console.log('⏳ User not authenticated, skipping socket connection');
+      return null;
     }
+
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      console.log('⏳ No token available for socket connection');
+      return null;
+    }
+
+    console.log('🔌 Attempting to connect socket...');
+    
+    const newSocket = io('https://backend-walid-yahaya.onrender.com', {
+      auth: {
+        token: `Bearer ${token}`,
+      },
+      transports: ['websocket', 'polling'], // إضافة polling كخيار احتياطي
+      reconnection: true,
+      reconnectionAttempts: 10,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      timeout: 10000,
+      autoConnect: true,
+      forceNew: true,
+    });
+
+    return newSocket;
   }, [isAuthenticated, user]);
 
-  const sendMessage = (conversationId, message) => {
-    if (socket) {
-      socket.emit('send-message', {
+  // دالة إعادة الاتصال
+  const reconnect = useCallback(() => {
+    if (reconnectAttempts >= maxReconnectAttempts) {
+      console.log('❌ Max reconnection attempts reached');
+      toast.error('فقد الاتصال بالخادم، يرجى تحديث الصفحة');
+      return;
+    }
+
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+    }
+
+    reconnectTimeoutRef.current = setTimeout(() => {
+      console.log(`🔄 Reconnection attempt ${reconnectAttempts + 1}/${maxReconnectAttempts}`);
+      setReconnectAttempts(prev => prev + 1);
+      
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
+
+      const newSocket = connectSocket();
+      if (newSocket) {
+        setupSocketListeners(newSocket);
+        setSocket(newSocket);
+        socketRef.current = newSocket;
+      }
+    }, Math.min(1000 * Math.pow(2, reconnectAttempts), 10000)); // تأخير تصاعدي
+  }, [reconnectAttempts, connectSocket]);
+
+  // إعداد مستمعي الأحداث للسوكيت
+  const setupSocketListeners = useCallback((socketInstance) => {
+    if (!socketInstance) return;
+
+    socketInstance.on('connect', () => {
+      console.log('✅ Socket connected successfully:', socketInstance.id);
+      setIsConnected(true);
+      setReconnectAttempts(0);
+      
+      if (user?.id) {
+        socketInstance.emit('user-online', user.id);
+      }
+      
+      toast.success('تم الاتصال بالخادم', { duration: 2000 });
+    });
+
+    socketInstance.on('disconnect', (reason) => {
+      console.log('🔴 Socket disconnected:', socketInstance.id, 'reason:', reason);
+      setIsConnected(false);
+      
+      if (reason === 'io server disconnect' || reason === 'transport close') {
+        // محاولة إعادة الاتصال
+        reconnect();
+      }
+    });
+
+    socketInstance.on('connect_error', (error) => {
+      console.error('❌ Socket connection error:', error.message);
+      setIsConnected(false);
+      
+      // إذا كان خطأ المصادقة، حاول تجديد التوكن
+      if (error.message.includes('Invalid token') || error.message.includes('unauthorized')) {
+        handleTokenError();
+      } else {
+        reconnect();
+      }
+    });
+
+    socketInstance.on('notification', (notification) => {
+      console.log('📬 New notification:', notification);
+      setNotifications((prev) => [notification, ...prev]);
+      
+      // عرض إشعار للمستخدم حسب الأولوية
+      if (notification.priority === 'high' || notification.priority === 'urgent') {
+        toast.success(notification.title || notification.message, {
+          duration: 5000,
+          icon: '🔔',
+        });
+      }
+    });
+
+    socketInstance.on('order-update', (order) => {
+      console.log('📦 Order update:', order);
+      toast.success(`تحديث الطلب #${order.id}: ${order.status}`, {
+        duration: 4000,
+      });
+    });
+
+    socketInstance.on('driver-location', (data) => {
+      // تحديث موقع المندوب على الخريطة
+      window.dispatchEvent(new CustomEvent('driver-location-update', { 
+        detail: data 
+      }));
+    });
+
+    socketInstance.on('users-online', (users) => {
+      console.log('👥 Online users:', users.length);
+      setOnlineUsers(users);
+    });
+
+    socketInstance.on('reconnect', (attemptNumber) => {
+      console.log('🔄 Socket reconnected after', attemptNumber, 'attempts');
+      setIsConnected(true);
+      setReconnectAttempts(0);
+      
+      if (user?.id) {
+        socketInstance.emit('user-online', user.id);
+      }
+    });
+
+    socketInstance.on('reconnect_attempt', (attemptNumber) => {
+      console.log('🔄 Reconnection attempt:', attemptNumber);
+    });
+
+    socketInstance.on('reconnect_error', (error) => {
+      console.error('❌ Reconnection error:', error);
+    });
+
+    socketInstance.on('reconnect_failed', () => {
+      console.error('❌ Reconnection failed');
+      toast.error('فشل الاتصال بالخادم، يرجى تحديث الصفحة');
+    });
+  }, [user?.id, reconnect]);
+
+  // معالجة أخطاء التوكن
+  const handleTokenError = useCallback(async () => {
+    try {
+      console.log('🔄 Attempting to refresh token...');
+      const refreshToken = localStorage.getItem('refreshToken');
+      
+      if (!refreshToken) {
+        throw new Error('No refresh token');
+      }
+
+      const response = await fetch('https://backend-walid-yahaya.onrender.com/api/auth/refresh', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ refreshToken }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        const { accessToken, refreshToken: newRefreshToken } = data.data || data;
+        
+        localStorage.setItem('accessToken', accessToken);
+        if (newRefreshToken) {
+          localStorage.setItem('refreshToken', newRefreshToken);
+        }
+
+        // إعادة الاتصال بالتوكن الجديد
+        if (socketRef.current) {
+          socketRef.current.disconnect();
+        }
+
+        const newSocket = connectSocket();
+        if (newSocket) {
+          setupSocketListeners(newSocket);
+          setSocket(newSocket);
+          socketRef.current = newSocket;
+        }
+      } else {
+        throw new Error('Failed to refresh token');
+      }
+    } catch (error) {
+      console.error('❌ Token refresh failed:', error);
+      // تسجيل الخروج إذا فشل تجديد التوكن
+      localStorage.clear();
+      window.location.href = '/login';
+      toast.error('انتهت الجلسة، يرجى تسجيل الدخول مرة أخرى');
+    }
+  }, [connectSocket, setupSocketListeners]);
+
+  // تأثير لإنشاء الاتصال عند المصادقة
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      console.log('🔌 Creating socket connection...');
+      
+      // تنظيف الاتصال القديم إن وجد
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current.removeAllListeners();
+      }
+
+      const newSocket = connectSocket();
+      if (newSocket) {
+        setupSocketListeners(newSocket);
+        setSocket(newSocket);
+        socketRef.current = newSocket;
+      }
+    }
+
+    // تنظيف عند إلغاء التثبيت
+    return () => {
+      console.log('🧹 Cleaning up socket connection...');
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
+      if (socketRef.current) {
+        socketRef.current.removeAllListeners();
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
+      setSocket(null);
+    };
+  }, [isAuthenticated, user, connectSocket, setupSocketListeners]);
+
+  // دوال التفاعل مع السوكيت
+  const sendMessage = useCallback((conversationId, message) => {
+    if (socketRef.current && isConnected) {
+      socketRef.current.emit('send-message', {
         conversationId,
         message,
         sender: user?.id,
         timestamp: new Date(),
       });
+    } else {
+      console.warn('⚠️ Socket not connected, message not sent');
+      toast.error('غير متصل بالخادم، سيتم إرسال الرسالة لاحقاً');
+      // يمكن تخزين الرسالة لإرسالها لاحقاً
     }
-  };
+  }, [user?.id, isConnected]);
 
-  const joinConversation = (conversationId) => {
-    if (socket) {
-      socket.emit('join-conversation', conversationId);
+  const joinConversation = useCallback((conversationId) => {
+    if (socketRef.current && isConnected) {
+      socketRef.current.emit('join-conversation', conversationId);
     }
-  };
+  }, [isConnected]);
 
-  const leaveConversation = (conversationId) => {
-    if (socket) {
-      socket.emit('leave-conversation', conversationId);
+  const leaveConversation = useCallback((conversationId) => {
+    if (socketRef.current && isConnected) {
+      socketRef.current.emit('leave-conversation', conversationId);
     }
-  };
+  }, [isConnected]);
 
   const value = {
-    socket,
+    socket: socketRef.current,
     onlineUsers,
     notifications,
+    isConnected,
+    reconnectAttempts,
     sendMessage,
     joinConversation,
     leaveConversation,
@@ -5366,6 +5439,22 @@ i18n
     resources: {
       ar: {
         translation: {
+          connected: 'متصل',
+disconnected: 'غير متصل',
+search_placeholder: 'بحث...',
+notification: 'إشعار',
+
+          // في قسم العربية (ar)
+          error_loading_restaurants: 'حدث خطأ أثناء تحميل المطاعم',
+          try_again_later: 'يرجى المحاولة مرة أخرى لاحقاً',
+          retry: 'إعادة المحاولة',
+          loading_restaurants: 'جاري تحميل المطاعم...',
+          no_restaurants_found: 'لم يتم العثور على مطاعم',
+          try_different_search: 'جرب بحثاً مختلفاً أو أضف مطعماً جديداً',
+          add_first_restaurant: 'أضف أول مطعم الآن',
+          deleting: 'جاري الحذف...',
+          error_deleting_restaurant: 'حدث خطأ أثناء حذف المطعم',
+          delete_restaurant_warning: 'هذا الإجراء لا يمكن التراجع عنه',
           // ========== العناوين الرئيسية ==========
           admin_dashboard: 'لوحة تحكم الأدمن',
           dashboard: 'لوحة التحكم',
@@ -5379,7 +5468,7 @@ i18n
           driver_tracking: 'تتبع المندوبين',
           statistics_and_analytics: 'الإحصائيات والتحليلات',
           settings: 'الإعدادات',
-          
+
           // ========== إحصائيات عامة ==========
           total_users: 'إجمالي المستخدمين',
           total_restaurants: 'إجمالي المطاعم',
@@ -5393,7 +5482,7 @@ i18n
           total_sent: 'إجمالي المرسلات',
           delivered: 'تم التوصيل',
           open_rate: 'نسبة الفتح',
-          
+
           // ========== الفترات الزمنية ==========
           today: 'اليوم',
           this_week: 'هذا الأسبوع',
@@ -5401,7 +5490,7 @@ i18n
           this_year: 'هذا العام',
           from_date: 'من تاريخ',
           to_date: 'إلى تاريخ',
-          
+
           // ========== الطلبات ==========
           orders: 'الطلبات',
           recent_orders: 'الطلبات الأخيرة',
@@ -5429,7 +5518,7 @@ i18n
           accepted_orders: 'الطلبات المقبولة',
           delivered_orders: 'الطلبات الموصلة',
           cancelled_orders: 'الطلبات الملغية',
-          
+
           // ========== حالات الطلب ==========
           pending: 'قيد الانتظار',
           accepted: 'مقبول',
@@ -5437,7 +5526,7 @@ i18n
           delivered: 'تم التوصيل',
           cancelled: 'ملغي',
           all_status: 'جميع الحالات',
-          
+
           // ========== المطاعم ==========
           top_restaurants: 'أفضل المطاعم',
           no_restaurants: 'لا توجد مطاعم',
@@ -5450,7 +5539,7 @@ i18n
           no_address: 'لا يوجد عنوان',
           restaurant_deleted_success: 'تم حذف المطعم بنجاح',
           delete_restaurant_confirmation: 'هل أنت متأكد من حذف المطعم {{name}}؟',
-          
+
           // ========== عناصر القائمة ==========
           menu_items: 'قائمة الطعام',
           add_item: 'إضافة عنصر',
@@ -5478,7 +5567,7 @@ i18n
           item_deleted_success: 'تم حذف العنصر بنجاح',
           item_created_success: 'تم إنشاء العنصر بنجاح',
           delete_item_confirmation: 'هل أنت متأكد من حذف {{name}}؟',
-          
+
           // ========== المستخدمين ==========
           users: 'المستخدمين',
           user: 'المستخدم',
@@ -5495,13 +5584,13 @@ i18n
           no_users_found: 'لم يتم العثور على مستخدمين',
           user_deleted_success: 'تم حذف المستخدم بنجاح',
           delete_reason_optional: 'سبب الحذف (اختياري)',
-          
+
           // ========== الأدوار ==========
           admin: 'مدير',
           client: 'عميل',
           driver: 'مندوب',
           restaurant_owner: 'صاحب مطعم',
-          
+
           // ========== الإشعارات ==========
           notifications: 'الإشعارات',
           send_notification: 'إرسال إشعار',
@@ -5537,7 +5626,7 @@ i18n
           notification_sent_success: 'تم إرسال الإشعار بنجاح',
           enter_title: 'أدخل العنوان',
           enter_content: 'أدخل المحتوى',
-          
+
           // ========== التقييمات ==========
           reviews: 'التقييمات',
           search_reviews: 'بحث في التقييمات',
@@ -5549,7 +5638,7 @@ i18n
           review_deleted_success: 'تم حذف التقييم بنجاح',
           review_updated_success: 'تم تحديث التقييم بنجاح',
           delete_review_confirmation: 'هل أنت متأكد من حذف هذا التقييم؟',
-          
+
           // ========== الدعم والدردشة ==========
           support: 'الدعم',
           active_conversations: 'المحادثات النشطة',
@@ -5564,7 +5653,7 @@ i18n
           failed_to_send_message: 'فشل إرسال الرسالة',
           conversation_assigned: 'تم تعيين المحادثة لك',
           failed_to_assign: 'فشل تعيين المحادثة',
-          
+
           // ========== تتبع المندوبين ==========
           tracking: 'التتبع',
           active_deliveries: 'التوصيلات النشطة',
@@ -5572,7 +5661,7 @@ i18n
           not_assigned: 'غير معين',
           delivery_location: 'موقع التوصيل',
           last_update: 'آخر تحديث',
-          
+
           // ========== الإحصائيات ==========
           statistics: 'الإحصائيات',
           export_report: 'تصدير التقرير',
@@ -5584,7 +5673,7 @@ i18n
           daily_orders: 'الطلبات اليومية',
           daily_revenue: 'الإيرادات اليومية',
           orders_status: 'حالات الطلبات',
-          
+
           // ========== الإعدادات ==========
           save_settings: 'حفظ الإعدادات',
           general_settings: 'الإعدادات العامة',
@@ -5650,7 +5739,7 @@ i18n
           dense_mode: 'وضع مكثف',
           settings_updated: 'تم تحديث الإعدادات',
           cache_cleared: 'تم مسح التخزين المؤقت',
-          
+
           // ========== أزرار ==========
           refresh: 'تحديث',
           export: 'تصدير',
@@ -5678,12 +5767,12 @@ i18n
           profile: 'الملف الشخصي',
           activity_log: 'سجل النشاط',
           logout: 'تسجيل الخروج',
-          
+
           // ========== رسائل نجاح ==========
           login_success: 'تم تسجيل الدخول بنجاح',
           order_status_updated: 'تم تحديث حالة الطلب',
           driver_assigned_success: 'تم تعيين المندوب بنجاح',
-          
+
           // ========== رسائل خطأ ==========
           auth_error: 'حدث خطأ في عملية المصادقة',
           unauthorized_access: 'ليس لديك صلاحية الوصول إلى لوحة التحكم',
@@ -5691,7 +5780,7 @@ i18n
           registration_failed: 'فشل التسجيل، يرجى المحاولة مرة أخرى',
           passwords_dont_match: 'كلمة المرور غير متطابقة',
           delete_user_confirmation: 'هل أنت متأكد من حذف المستخدم {{name}}؟',
-          
+
           // ========== المصادقة ==========
           email_optional: 'البريد الإلكتروني (اختياري)',
           delivery_admin: 'لوحة تحكم التوصيل',
@@ -5706,7 +5795,7 @@ i18n
           need_account: 'ليس لديك حساب؟ سجل الآن',
           have_account: 'لديك حساب بالفعل؟ سجل دخول',
           loading: 'جاري التحميل...',
-          
+
           // ========== متنوع ==========
           no_data: 'لا توجد بيانات',
           error: 'خطأ',
@@ -5727,6 +5816,20 @@ i18n
       },
       en: {
         translation: {
+          connected: 'Connected',
+disconnected: 'Disconnected',
+search_placeholder: 'Search...',
+notification: 'Notification',
+          error_loading_restaurants: 'Error loading restaurants',
+          try_again_later: 'Please try again later',
+          retry: 'Retry',
+          loading_restaurants: 'Loading restaurants...',
+          no_restaurants_found: 'No restaurants found',
+          try_different_search: 'Try a different search or add a new restaurant',
+          add_first_restaurant: 'Add your first restaurant now',
+          deleting: 'Deleting...',
+          error_deleting_restaurant: 'Error deleting restaurant',
+          delete_restaurant_warning: 'This action cannot be undone',
           // ========== Main Titles ==========
           admin_dashboard: 'Admin Dashboard',
           dashboard: 'Dashboard',
@@ -5740,7 +5843,7 @@ i18n
           driver_tracking: 'Driver Tracking',
           statistics_and_analytics: 'Statistics & Analytics',
           settings: 'Settings',
-          
+
           // ========== General Statistics ==========
           total_users: 'Total Users',
           total_restaurants: 'Total Restaurants',
@@ -5754,7 +5857,7 @@ i18n
           total_sent: 'Total Sent',
           delivered: 'Delivered',
           open_rate: 'Open Rate',
-          
+
           // ========== Time Periods ==========
           today: 'Today',
           this_week: 'This Week',
@@ -5762,7 +5865,7 @@ i18n
           this_year: 'This Year',
           from_date: 'From Date',
           to_date: 'To Date',
-          
+
           // ========== Orders ==========
           orders: 'Orders',
           recent_orders: 'Recent Orders',
@@ -5790,7 +5893,7 @@ i18n
           accepted_orders: 'Accepted Orders',
           delivered_orders: 'Delivered Orders',
           cancelled_orders: 'Cancelled Orders',
-          
+
           // ========== Order Status ==========
           pending: 'Pending',
           accepted: 'Accepted',
@@ -5798,7 +5901,7 @@ i18n
           delivered: 'Delivered',
           cancelled: 'Cancelled',
           all_status: 'All Status',
-          
+
           // ========== Restaurants ==========
           top_restaurants: 'Top Restaurants',
           no_restaurants: 'No Restaurants',
@@ -5811,7 +5914,7 @@ i18n
           no_address: 'No Address',
           restaurant_deleted_success: 'Restaurant deleted successfully',
           delete_restaurant_confirmation: 'Are you sure you want to delete {{name}}?',
-          
+
           // ========== Menu Items ==========
           menu_items: 'Menu Items',
           add_item: 'Add Item',
@@ -5839,7 +5942,7 @@ i18n
           item_deleted_success: 'Item deleted successfully',
           item_created_success: 'Item created successfully',
           delete_item_confirmation: 'Are you sure you want to delete {{name}}?',
-          
+
           // ========== Users ==========
           users: 'Users',
           user: 'User',
@@ -5856,13 +5959,13 @@ i18n
           no_users_found: 'No users found',
           user_deleted_success: 'User deleted successfully',
           delete_reason_optional: 'Delete reason (optional)',
-          
+
           // ========== Roles ==========
           admin: 'Admin',
           client: 'Client',
           driver: 'Driver',
           restaurant_owner: 'Restaurant Owner',
-          
+
           // ========== Notifications ==========
           notifications: 'Notifications',
           send_notification: 'Send Notification',
@@ -5898,7 +6001,7 @@ i18n
           notification_sent_success: 'Notification sent successfully',
           enter_title: 'Enter title',
           enter_content: 'Enter content',
-          
+
           // ========== Reviews ==========
           reviews: 'Reviews',
           search_reviews: 'Search Reviews',
@@ -5910,7 +6013,7 @@ i18n
           review_deleted_success: 'Review deleted successfully',
           review_updated_success: 'Review updated successfully',
           delete_review_confirmation: 'Are you sure you want to delete this review?',
-          
+
           // ========== Support & Chat ==========
           support: 'Support',
           active_conversations: 'Active Conversations',
@@ -5925,7 +6028,7 @@ i18n
           failed_to_send_message: 'Failed to send message',
           conversation_assigned: 'Conversation assigned to you',
           failed_to_assign: 'Failed to assign conversation',
-          
+
           // ========== Driver Tracking ==========
           tracking: 'Tracking',
           active_deliveries: 'Active Deliveries',
@@ -5933,7 +6036,7 @@ i18n
           not_assigned: 'Not Assigned',
           delivery_location: 'Delivery Location',
           last_update: 'Last Update',
-          
+
           // ========== Statistics ==========
           statistics: 'Statistics',
           export_report: 'Export Report',
@@ -5945,7 +6048,7 @@ i18n
           daily_orders: 'Daily Orders',
           daily_revenue: 'Daily Revenue',
           orders_status: 'Orders Status',
-          
+
           // ========== Settings ==========
           save_settings: 'Save Settings',
           general_settings: 'General Settings',
@@ -6011,7 +6114,7 @@ i18n
           dense_mode: 'Dense Mode',
           settings_updated: 'Settings updated',
           cache_cleared: 'Cache cleared',
-          
+
           // ========== Buttons ==========
           refresh: 'Refresh',
           export: 'Export',
@@ -6039,12 +6142,12 @@ i18n
           profile: 'Profile',
           activity_log: 'Activity Log',
           logout: 'Logout',
-          
+
           // ========== Success Messages ==========
           login_success: 'Login successful',
           order_status_updated: 'Order status updated',
           driver_assigned_success: 'Driver assigned successfully',
-          
+
           // ========== Error Messages ==========
           auth_error: 'Authentication error occurred',
           unauthorized_access: 'You do not have permission to access the dashboard',
@@ -6052,7 +6155,7 @@ i18n
           registration_failed: 'Registration failed, please try again',
           passwords_dont_match: 'Passwords do not match',
           delete_user_confirmation: 'Are you sure you want to delete user {{name}}?',
-          
+
           // ========== Authentication ==========
           email_optional: 'Email (optional)',
           delivery_admin: 'Delivery Admin Dashboard',
@@ -6067,7 +6170,7 @@ i18n
           need_account: "Don't have an account? Register",
           have_account: 'Already have an account? Login',
           loading: 'Loading...',
-          
+
           // ========== Miscellaneous ==========
           no_data: 'No data',
           error: 'Error',
@@ -6121,10 +6224,32 @@ const api = axios.create({
   },
 });
 
-// ✅ Interceptor للطلب - إرسال Bearer token فقط
+// إضافة token للتخزين المؤقت للتجنب القراءة المتكررة من localStorage
+let cachedToken = null;
+let tokenRefreshPromise = null;
+
+// ✅ دالة للحصول على التوكن مع التخزين المؤقت
+const getToken = () => {
+  if (!cachedToken) {
+    cachedToken = localStorage.getItem('accessToken');
+  }
+  return cachedToken;
+};
+
+// ✅ دالة لتحديث التوكن المخزن مؤقتاً
+const updateToken = (token) => {
+  cachedToken = token;
+  if (token) {
+    localStorage.setItem('accessToken', token);
+  } else {
+    localStorage.removeItem('accessToken');
+  }
+};
+
+// ✅ Interceptor للطلب - إرسال Bearer token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('accessToken');
+    const token = getToken();
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -6141,7 +6266,7 @@ api.interceptors.request.use(
   }
 );
 
-// Interceptor للرد
+// ✅ Interceptor للرد مع معالجة محسنة للـ refresh token
 api.interceptors.response.use(
   (response) => {
     if (process.env.NODE_ENV === 'development') {
@@ -6155,39 +6280,82 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // تجنب التكرار في حالة فشل الـ refresh نفسه
+    if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url.includes('/auth/refresh')) {
+      
+      if (tokenRefreshPromise) {
+        // إذا كان هناك طلب تحديث قيد التنفيذ، انتظر حتى يكتمل
+        try {
+          await tokenRefreshPromise;
+          // أعد المحاولة بالتوكن الجديد
+          originalRequest.headers.Authorization = `Bearer ${getToken()}`;
+          return api(originalRequest);
+        } catch (refreshError) {
+          return Promise.reject(refreshError);
+        }
+      }
+
       originalRequest._retry = true;
+      
+      // إنشاء وعد جديد لتحديث التوكن
+      tokenRefreshPromise = (async () => {
+        try {
+          const refreshToken = localStorage.getItem('refreshToken');
+
+          if (!refreshToken) {
+            throw new Error('No refresh token');
+          }
+
+          const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
+            refreshToken,
+          });
+
+          const { accessToken, refreshToken: newRefreshToken } = response.data.data || response.data;
+
+          updateToken(accessToken);
+          
+          if (newRefreshToken) {
+            localStorage.setItem('refreshToken', newRefreshToken);
+          }
+
+          return accessToken;
+        } catch (refreshError) {
+          // فشل التحديث - تسجيل الخروج
+          localStorage.clear();
+          cachedToken = null;
+          window.location.href = '/login';
+          toast.error('انتهت الجلسة، يرجى تسجيل الدخول مرة أخرى');
+          throw refreshError;
+        } finally {
+          tokenRefreshPromise = null;
+        }
+      })();
 
       try {
-        const refreshToken = localStorage.getItem('refreshToken');
-
-        if (!refreshToken) {
-          throw new Error('No refresh token');
-        }
-
-        const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
-          refreshToken,
-        });
-
-        const { accessToken } = response.data.data || response.data;
-
-        localStorage.setItem('accessToken', accessToken);
-        originalRequest.headers.Authorization = `Bearer ${accessToken}`;
-
+        const newToken = await tokenRefreshPromise;
+        originalRequest.headers.Authorization = `Bearer ${newToken}`;
         return api(originalRequest);
       } catch (refreshError) {
-        localStorage.clear();
-        window.location.href = '/login';
-        toast.error('انتهت الجلسة، يرجى تسجيل الدخول مرة أخرى');
         return Promise.reject(refreshError);
       }
+    }
+
+    // معالجة الأخطاء الأخرى
+    const errorMessage = error.response?.data?.message || 
+                        error.response?.data?.error || 
+                        error.message || 
+                        'حدث خطأ في الاتصال';
+    
+    // لا نظهر toast للأخطاء 401 لأننا نعالجها بالفعل
+    if (error.response?.status !== 401) {
+      toast.error(errorMessage);
     }
 
     return Promise.reject(error);
   }
 );
 
-// ✅ دالة مساعدة لاستخراج البيانات من مختلف هياكل الردود
+// ✅ دالة مساعدة متطورة لاستخراج البيانات من مختلف هياكل الردود
 const extractData = (response, defaultData = null) => {
   if (!response || !response.data) return defaultData;
   
@@ -6208,17 +6376,41 @@ const extractData = (response, defaultData = null) => {
     return res;
   }
   
+  // إذا كان الكائن نفسه هو البيانات
+  if (res && typeof res === 'object' && !res.success && !res.data) {
+    return res;
+  }
+  
   return res;
 };
 
-// ✅ دالة مساعدة لاستخراج الباجينيشن
+// ✅ دالة مساعدة متطورة لاستخراج الباجينيشن
 const extractPagination = (response) => {
   if (!response || !response.data) return null;
   
   const res = response.data;
   
+  // هيكل السيرفر: { pagination: { ... } }
   if (res.pagination) {
     return res.pagination;
+  }
+  
+  // هيكل آخر: { data: { pagination: { ... } } }
+  if (res.data && res.data.pagination) {
+    return res.data.pagination;
+  }
+  
+  // استخراج من البيانات المغلفة
+  if (res.data && typeof res.data === 'object') {
+    const dataObj = res.data;
+    if (dataObj.totalPages !== undefined || dataObj.page !== undefined) {
+      return {
+        page: dataObj.page || 1,
+        totalPages: dataObj.totalPages || 1,
+        total: dataObj.total || 0,
+        limit: dataObj.limit || 10
+      };
+    }
   }
   
   return null;
@@ -6227,7 +6419,7 @@ const extractPagination = (response) => {
 // ✅ دالة التحقق من صحة التوكن
 export const validateToken = async () => {
   try {
-    const token = localStorage.getItem('accessToken');
+    const token = getToken();
     if (!token) {
       return false;
     }
@@ -6263,7 +6455,7 @@ export const refreshToken = async () => {
     const data = extractData(response);
     const { accessToken, refreshToken: newRefreshToken } = data;
 
-    localStorage.setItem('accessToken', accessToken);
+    updateToken(accessToken);
     if (newRefreshToken) {
       localStorage.setItem('refreshToken', newRefreshToken);
     }
@@ -6277,10 +6469,11 @@ export const refreshToken = async () => {
 
 // ✅ دوال API مع معالجة موحدة للبيانات
 export const adminAPI = {
+  // ✅ لوحة التحكم الرئيسية
   getDashboardStats: async () => {
     try {
       const response = await api.get('/aggregate/admin/dashboard');
-      const data = extractData(response);
+      const data = extractData(response, {});
       return {
         data: {
           data: data || {
@@ -6296,56 +6489,68 @@ export const adminAPI = {
       };
     } catch (error) {
       console.error('Dashboard stats error:', error);
-      return {
-        data: {
-          data: {
-            totalUsers: 0,
-            totalRestaurants: 0,
-            totalOrders: 0,
-            totalRevenue: 0,
-            activeDrivers: 0,
-            recentOrders: [],
-            topRestaurants: []
-          }
-        }
-      };
+      throw error;
     }
   },
 
-  // ✅ إدارة المطاعم - مُصححة حسب هيكل السيرفر
+  // ✅ إدارة المطاعم - مُحسنة بشكل كبير
   getRestaurants: async (params) => {
     try {
       const response = await api.get('/restaurants', { params });
       
-      // استخراج البيانات حسب هيكل السيرفر
-      const restaurants = extractData(response) || [];
+      // استخراج البيانات الأساسية
+      const restaurantsData = extractData(response);
       const pagination = extractPagination(response);
       
-      console.log('📦 Restaurants data:', { restaurants, pagination });
+      console.log('📦 Restaurants API Response:', { 
+        raw: response.data,
+        extracted: restaurantsData,
+        pagination 
+      });
       
-      // إرجاع بهيكل موحد
+      // معالجة ذكية للبيانات
+      let restaurants = [];
+      let totalPages = 1;
+      let total = 0;
+      
+      if (Array.isArray(restaurantsData)) {
+        // الحالة 1: البيانات هي مصفوفة مباشرة
+        restaurants = restaurantsData;
+        total = restaurantsData.length;
+      } else if (restaurantsData && typeof restaurantsData === 'object') {
+        // الحالة 2: البيانات هي كائن يحتوي على المصفوفة
+        if (Array.isArray(restaurantsData.restaurants)) {
+          restaurants = restaurantsData.restaurants;
+        } else if (Array.isArray(restaurantsData.data)) {
+          restaurants = restaurantsData.data;
+        } else if (Array.isArray(restaurantsData.items)) {
+          restaurants = restaurantsData.items;
+        }
+        
+        total = restaurantsData.total || restaurants.length;
+      }
+      
+      // استخدام معلومات الباجينيشن إن وجدت
+      if (pagination) {
+        totalPages = pagination.totalPages || pagination.pageCount || 1;
+        total = pagination.total || total;
+      } else if (restaurantsData && restaurantsData.totalPages) {
+        totalPages = restaurantsData.totalPages;
+      }
+      
       return {
         data: {
           data: {
-            restaurants: Array.isArray(restaurants) ? restaurants : [],
-            totalPages: pagination?.totalPages || 1,
-            currentPage: pagination?.page || 1,
-            total: pagination?.total || restaurants.length || 0
+            restaurants,
+            totalPages,
+            currentPage: pagination?.page || params?.page || 1,
+            total
           }
         }
       };
     } catch (error) {
       console.error('Get restaurants error:', error);
-      return {
-        data: {
-          data: {
-            restaurants: [],
-            totalPages: 1,
-            currentPage: 1,
-            total: 0
-          }
-        }
-      };
+      throw error;
     }
   },
 
@@ -6360,77 +6565,39 @@ export const adminAPI = {
     }
   },
 
-  // ✅ الدعم الفني - مع التأكد من هيكل البيانات
-  getSupportConversations: async (params) => {
-    try {
-      const response = await api.get('/chat/admin/support-conversations', { params });
-      
-      // استخراج البيانات حسب هيكل السيرفر
-      const data = extractData(response);
-      
-      // تحويل البيانات إلى مصفوفة دائماً
-      let conversations = [];
-      
-      if (Array.isArray(data)) {
-        conversations = data;
-      } else if (data?.conversations && Array.isArray(data.conversations)) {
-        conversations = data.conversations;
-      } else if (data?.items && Array.isArray(data.items)) {
-        conversations = data.items;
-      }
-      
-      return { data: { data: conversations } };
-    } catch (error) {
-      console.error('Failed to fetch support conversations:', error);
-      return { data: { data: [] } };
-    }
-  },
-
-  assignSupportConversation: (id, userId) =>
-    api.put(`/chat/admin/conversations/${id}/assign`, { assignedTo: userId }),
-
-  getOrdersStats: async (params) => {
-    try {
-      const response = await api.get('/orders/stats', { params });
-      const data = extractData(response);
-      return {
-        data: {
-          data: data || {
-            dailyStats: [],
-            statusDistribution: []
-          }
-        }
-      };
-    } catch (error) {
-      console.log('Orders stats endpoint not available');
-      return {
-        data: {
-          data: {
-            dailyStats: [],
-            statusDistribution: []
-          }
-        }
-      };
-    }
-  },
-
-  // ✅ إدارة المستخدمين
+  // ✅ إدارة المستخدمين - مُحسنة
   getUsers: async (params) => {
     try {
       const response = await api.get('/complete/admin/users', { params });
-      const data = extractData(response);
+      
+      const usersData = extractData(response);
+      const pagination = extractPagination(response);
+      
+      let users = [];
+      let totalPages = 1;
+      let total = 0;
+      
+      if (Array.isArray(usersData)) {
+        users = usersData;
+        total = usersData.length;
+      } else if (usersData && typeof usersData === 'object') {
+        users = usersData.users || usersData.data || usersData.items || [];
+        total = usersData.total || users.length;
+        totalPages = usersData.totalPages || pagination?.totalPages || 1;
+      }
       
       return {
         data: {
           data: {
-            users: data?.users || data || [],
-            totalPages: data?.totalPages || 1
+            users,
+            totalPages,
+            total
           }
         }
       };
     } catch (error) {
       console.error('Get users error:', error);
-      return { data: { data: { users: [], totalPages: 1 } } };
+      throw error;
     }
   },
 
@@ -6465,24 +6632,42 @@ export const adminAPI = {
     }
   },
 
-  // ✅ إدارة الطلبات
+  // ✅ إدارة الطلبات - مُحسنة
   getOrders: async (params) => {
     try {
       const response = await api.get('/aggregate/orders/admin', { params });
-      const data = extractData(response);
+      
+      const ordersData = extractData(response);
+      const pagination = extractPagination(response);
+      
+      let orders = [];
+      let stats = {};
+      let totalPages = 1;
+      let total = 0;
+      
+      if (Array.isArray(ordersData)) {
+        orders = ordersData;
+        total = ordersData.length;
+      } else if (ordersData && typeof ordersData === 'object') {
+        orders = ordersData.orders || ordersData.data || ordersData.items || [];
+        stats = ordersData.stats || {};
+        total = ordersData.total || orders.length;
+        totalPages = ordersData.totalPages || pagination?.totalPages || 1;
+      }
       
       return {
         data: {
           data: {
-            orders: data?.orders || data || [],
-            totalPages: data?.totalPages || 1,
-            stats: data?.stats || {}
+            orders,
+            stats,
+            totalPages,
+            total
           }
         }
       };
     } catch (error) {
       console.error('Get orders error:', error);
-      return { data: { data: { orders: [], totalPages: 1, stats: {} } } };
+      throw error;
     }
   },
 
@@ -6517,23 +6702,39 @@ export const adminAPI = {
     }
   },
 
-  // ✅ إدارة العناصر
+  // ✅ إدارة العناصر - مُحسنة
   getItems: async (params) => {
     try {
       const response = await api.get('/items', { params });
-      const data = extractData(response);
+      
+      const itemsData = extractData(response);
+      const pagination = extractPagination(response);
+      
+      let items = [];
+      let totalPages = 1;
+      let total = 0;
+      
+      if (Array.isArray(itemsData)) {
+        items = itemsData;
+        total = itemsData.length;
+      } else if (itemsData && typeof itemsData === 'object') {
+        items = itemsData.items || itemsData.data || [];
+        total = itemsData.total || items.length;
+        totalPages = itemsData.totalPages || pagination?.totalPages || 1;
+      }
       
       return {
         data: {
           data: {
-            items: Array.isArray(data) ? data : (data?.items || []),
-            totalPages: data?.totalPages || 1
+            items,
+            totalPages,
+            total
           }
         }
       };
     } catch (error) {
       console.error('Get items error:', error);
-      return { data: { data: { items: [], totalPages: 1 } } };
+      throw error;
     }
   },
 
@@ -6558,6 +6759,27 @@ export const adminAPI = {
     }
   },
 
+  updateItem: async (id, data) => {
+    try {
+      const formData = new FormData();
+      Object.keys(data).forEach(key => {
+        if (key === 'image' && data[key] instanceof File) {
+          formData.append(key, data[key]);
+        } else {
+          formData.append(key, data[key]);
+        }
+      });
+
+      const response = await api.put(`/items/${id}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return response;
+    } catch (error) {
+      console.error('Update item error:', error);
+      throw error;
+    }
+  },
+
   deleteItem: async (id) => {
     try {
       const response = await api.delete(`/items/${id}`);
@@ -6568,23 +6790,42 @@ export const adminAPI = {
     }
   },
 
-  // ✅ إدارة الإشعارات
+  // ✅ إدارة الإشعارات - مُحسنة
   getNotifications: async (params) => {
     try {
       const response = await api.get('/notifications', { params });
-      const data = extractData(response);
+      
+      const notificationsData = extractData(response);
+      const pagination = extractPagination(response);
+      
+      let items = [];
+      let total = 0;
+      
+      if (Array.isArray(notificationsData)) {
+        items = notificationsData;
+        total = notificationsData.length;
+      } else if (notificationsData && typeof notificationsData === 'object') {
+        items = notificationsData.items || notificationsData.data || [];
+        total = notificationsData.total || items.length;
+      }
       
       return {
         data: {
           data: {
-            items: data?.items || data || [],
-            total: data?.total || 0
+            items,
+            total,
+            delivered: notificationsData?.delivered || 0,
+            openRate: notificationsData?.openRate || 0,
+            clients: notificationsData?.clients || [],
+            drivers: notificationsData?.drivers || [],
+            restaurantOwners: notificationsData?.restaurantOwners || [],
+            allUsers: notificationsData?.allUsers || []
           }
         }
       };
     } catch (error) {
       console.error('Get notifications error:', error);
-      return { data: { data: { items: [], total: 0 } } };
+      throw error;
     }
   },
 
@@ -6608,23 +6849,42 @@ export const adminAPI = {
     }
   },
 
-  // ✅ إدارة المراجعات
+  // ✅ إدارة المراجعات - مُحسنة
   getReviews: async (params) => {
     try {
       const response = await api.get('/reviews', { params });
-      const data = extractData(response);
+      
+      const reviewsData = extractData(response);
+      const pagination = extractPagination(response);
+      
+      let reviews = [];
+      let stats = {};
+      let totalPages = 1;
+      let total = 0;
+      
+      if (Array.isArray(reviewsData)) {
+        reviews = reviewsData;
+        total = reviewsData.length;
+      } else if (reviewsData && typeof reviewsData === 'object') {
+        reviews = reviewsData.reviews || reviewsData.data || reviewsData.items || [];
+        stats = reviewsData.stats || {};
+        total = reviewsData.total || reviews.length;
+        totalPages = reviewsData.totalPages || pagination?.totalPages || 1;
+      }
       
       return {
         data: {
           data: {
-            reviews: data?.reviews || data || [],
-            stats: data?.stats || {}
+            reviews,
+            stats,
+            totalPages,
+            total
           }
         }
       };
     } catch (error) {
       console.error('Get reviews error:', error);
-      return { data: { data: { reviews: [], stats: {} } } };
+      throw error;
     }
   },
 
@@ -6648,6 +6908,40 @@ export const adminAPI = {
     }
   },
 
+  // ✅ الدعم الفني - مُحسن
+  getSupportConversations: async (params) => {
+    try {
+      const response = await api.get('/chat/admin/support-conversations', { params });
+      
+      const conversationsData = extractData(response);
+      
+      let conversations = [];
+      
+      if (Array.isArray(conversationsData)) {
+        conversations = conversationsData;
+      } else if (conversationsData && typeof conversationsData === 'object') {
+        conversations = conversationsData.conversations || 
+                       conversationsData.data || 
+                       conversationsData.items || [];
+      }
+      
+      return { data: { data: conversations } };
+    } catch (error) {
+      console.error('Failed to fetch support conversations:', error);
+      throw error;
+    }
+  },
+
+  assignSupportConversation: async (id, userId) => {
+    try {
+      const response = await api.put(`/chat/admin/conversations/${id}/assign`, { assignedTo: userId });
+      return response;
+    } catch (error) {
+      console.error('Assign conversation error:', error);
+      throw error;
+    }
+  },
+
   // ✅ تتبع المندوبين
   getDriverLocation: async (orderId) => {
     try {
@@ -6659,9 +6953,38 @@ export const adminAPI = {
     }
   },
 
-  // ✅ الدعم الفني - مصحح لتجنب التكرار
-  // (تم تعريفه أعلاه، هذا للتأكد من عدم التكرار)
-  
+  // ✅ إحصائيات الطلبات - مُحسنة
+  getOrdersStats: async (params) => {
+    try {
+      const response = await api.get('/orders/stats', { params });
+      
+      const statsData = extractData(response);
+      
+      return {
+        data: {
+          data: statsData || {
+            dailyStats: [],
+            statusDistribution: [],
+            userGrowth: [],
+            topRestaurants: []
+          }
+        }
+      };
+    } catch (error) {
+      console.log('Orders stats endpoint not available');
+      return {
+        data: {
+          data: {
+            dailyStats: [],
+            statusDistribution: [],
+            userGrowth: [],
+            topRestaurants: []
+          }
+        }
+      };
+    }
+  },
+
   // ✅ الإعدادات
   updateSettings: async (data) => {
     try {
@@ -6863,8 +7186,11 @@ class SocketService {
   constructor() {
     this.socket = null;
     this.listeners = new Map();
-    // ✅ استخدام المتغير البيئي
+    this.reconnectAttempts = 0;
+    this.maxReconnectAttempts = 5;
     this.socketUrl = process.env.REACT_APP_SOCKET_URL || 'https://backend-walid-yahaya.onrender.com';
+    this.isConnected = false;
+    this.messageQueue = []; // تخزين الرسائل المؤقتة
   }
 
   connect() {
@@ -6875,80 +7201,150 @@ class SocketService {
       return null;
     }
 
-    this.socket = io(this.socketUrl, { // ✅ استخدام المتغير
+    if (this.socket) {
+      console.log('⚠️ Socket already exists, disconnecting first...');
+      this.disconnect();
+    }
+
+    console.log('🔌 Connecting to socket server...');
+    
+    this.socket = io(this.socketUrl, {
       auth: { 
         token: `Bearer ${token}`
       },
-      transports: ['websocket'],
+      transports: ['websocket', 'polling'],
       reconnection: true,
-      reconnectionAttempts: 5,
+      reconnectionAttempts: 10,
       reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      timeout: 10000,
+      autoConnect: true,
+      forceNew: true,
     });
+
+    this.setupDefaultListeners();
+    return this.socket;
+  }
+
+  setupDefaultListeners() {
+    if (!this.socket) return;
 
     this.socket.on('connect', () => {
       console.log('✅ Socket connected successfully');
+      this.isConnected = true;
+      this.reconnectAttempts = 0;
+      
       const userId = this.getUserId();
       if (userId) {
         this.emit('user-online', userId);
       }
+
+      // إرسال الرسائل المعلقة
+      this.flushMessageQueue();
     });
 
     this.socket.on('connect_error', (error) => {
       console.error('❌ Socket connection error:', error);
+      this.isConnected = false;
       
-      // ✅ محاولة إعادة الاتصال بتوكن جديد
-      if (error.message === 'Invalid token') {
-        console.log('🔄 Attempting to refresh token for socket...');
-        this.refreshTokenAndReconnect();
+      if (error.message === 'Invalid token' || error.message.includes('unauthorized')) {
+        this.handleTokenError();
       }
     });
 
     this.socket.on('disconnect', (reason) => {
       console.log('🔌 Socket disconnected:', reason);
+      this.isConnected = false;
+      
+      if (reason === 'io server disconnect') {
+        // disconnected by server, reconnect manually
+        setTimeout(() => this.connect(), 1000);
+      }
     });
 
-    return this.socket;
+    this.socket.on('reconnect', (attemptNumber) => {
+      console.log('🔄 Socket reconnected after', attemptNumber, 'attempts');
+      this.isConnected = true;
+      this.reconnectAttempts = 0;
+    });
+
+    this.socket.on('reconnect_attempt', (attemptNumber) => {
+      console.log('🔄 Reconnection attempt:', attemptNumber);
+      this.reconnectAttempts = attemptNumber;
+    });
+
+    this.socket.on('reconnect_failed', () => {
+      console.error('❌ Reconnection failed');
+      this.isConnected = false;
+    });
+
+    this.socket.on('error', (error) => {
+      console.error('❌ Socket error:', error);
+    });
   }
 
-  async refreshTokenAndReconnect() {
+  async handleTokenError() {
+    console.log('🔄 Attempting to refresh token for socket...');
+    
     try {
       const refreshToken = localStorage.getItem('refreshToken');
       if (!refreshToken) throw new Error('No refresh token');
 
-       const response = await fetch(`${process.env.REACT_APP_API_URL}/auth/refresh`, {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/auth/refresh`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ refreshToken }),
       });
+      
       const data = await response.json();
       
       if (response.ok) {
-        localStorage.setItem('accessToken', data.accessToken);
-        if (data.refreshToken) {
-          localStorage.setItem('refreshToken', data.refreshToken);
+        const { accessToken, refreshToken: newRefreshToken } = data.data || data;
+        
+        localStorage.setItem('accessToken', accessToken);
+        if (newRefreshToken) {
+          localStorage.setItem('refreshToken', newRefreshToken);
         }
         
-        // ✅ إعادة الاتصال بالتوكن الجديد
-        this.disconnect();
-        this.connect();
+        // تحديث توكن السوكيت
+        if (this.socket) {
+          this.socket.auth.token = `Bearer ${accessToken}`;
+          this.socket.connect();
+        }
+      } else {
+        throw new Error('Failed to refresh token');
       }
     } catch (error) {
       console.error('❌ Failed to refresh token for socket:', error);
+      localStorage.clear();
+      window.location.href = '/login';
     }
   }
 
   disconnect() {
     if (this.socket) {
+      console.log('🔌 Disconnecting socket...');
+      this.socket.removeAllListeners();
       this.socket.disconnect();
       this.socket = null;
+      this.isConnected = false;
+      this.listeners.clear();
     }
   }
 
   emit(event, data) {
-    if (this.socket) {
+    if (this.socket && this.isConnected) {
       this.socket.emit(event, data);
+    } else {
+      console.warn(`⚠️ Socket not connected, queueing event: ${event}`);
+      this.messageQueue.push({ event, data, timestamp: Date.now() });
+      
+      // محاولة إعادة الاتصال
+      if (!this.socket) {
+        this.connect();
+      }
     }
   }
 
@@ -6963,6 +7359,18 @@ class SocketService {
     if (this.socket) {
       this.socket.off(event);
       this.listeners.delete(event);
+    }
+  }
+
+  flushMessageQueue() {
+    if (this.messageQueue.length > 0 && this.isConnected) {
+      console.log(`📨 Flushing ${this.messageQueue.length} queued messages`);
+      
+      this.messageQueue.forEach(({ event, data }) => {
+        this.socket.emit(event, data);
+      });
+      
+      this.messageQueue = [];
     }
   }
 
@@ -7014,102 +7422,18 @@ class SocketService {
   userTyping(conversationId, isTyping) {
     this.emit('typing', { conversationId, isTyping });
   }
+
+  // حالة الاتصال
+  getConnectionStatus() {
+    return {
+      isConnected: this.isConnected,
+      reconnectAttempts: this.reconnectAttempts,
+      queuedMessages: this.messageQueue.length
+    };
+  }
 }
 
 export default new SocketService();
-</file>
-
-<file path="src/styles/auth.css">
-.auth-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-  padding: 20px;
-}
-
-.auth-card {
-  background: white;
-  border-radius: var(--card-border-radius);
-  box-shadow: var(--box-shadow-lg);
-  padding: 40px;
-  width: 100%;
-  max-width: 450px;
-}
-
-.auth-header {
-  text-align: center;
-  margin-bottom: 30px;
-}
-
-.auth-logo {
-  width: 80px;
-  height: 80px;
-  margin-bottom: 20px;
-}
-
-.auth-header h1 {
-  color: var(--primary-color);
-  font-size: 24px;
-  margin-bottom: 10px;
-}
-
-.auth-header p {
-  color: #666;
-  font-size: 14px;
-}
-
-.auth-form .form-group {
-  margin-bottom: 20px;
-}
-
-.input-icon {
-  position: relative;
-}
-
-.input-icon svg {
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #999;
-}
-
-.input-icon input {
-  padding-right: 40px;
-}
-
-.btn-block {
-  width: 100%;
-  padding: 12px;
-  font-size: 16px;
-}
-
-.auth-footer {
-  text-align: center;
-  margin-top: 20px;
-}
-
-.btn-link {
-  background: none;
-  border: none;
-  color: var(--primary-color);
-  cursor: pointer;
-  font-size: 14px;
-  text-decoration: underline;
-}
-
-.btn-link:hover {
-  color: var(--secondary-color);
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .auth-card {
-    padding: 30px 20px;
-  }
-}
 </file>
 
 <file path="src/styles/global.css">
@@ -8645,7 +8969,18 @@ select.form-control {
   border-radius: var(--border-radius);
   transition: var(--transition-fast);
 }
-
+/* نفس التحسين لأي عناصر أخرى تستخدم line-clamp */
+.restaurant-description,
+.item-description,
+.message-preview {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  line-clamp: 2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-height: calc(1.5em * 2); /* قيمة افتراضية */
+}
 .restaurant-item:hover {
   background: var(--light-color);
 }
@@ -9470,6 +9805,644 @@ select.form-control {
     border: 1px solid var(--border-color) !important;
   }
 }
+/* Error Boundary Styles */
+.error-boundary-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
+}
+
+.error-boundary-card {
+  background: white;
+  border-radius: 16px;
+  padding: 40px;
+  max-width: 600px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+.error-icon {
+  font-size: 64px;
+  color: #f39c12;
+  margin-bottom: 20px;
+}
+
+.error-boundary-card h2 {
+  font-size: 24px;
+  color: #2c3e50;
+  margin-bottom: 15px;
+}
+
+.error-message {
+  color: #7f8c8d;
+  margin-bottom: 20px;
+  font-size: 16px;
+}
+
+.error-details {
+  margin: 20px 0;
+  text-align: left;
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 15px;
+}
+
+.error-details summary {
+  cursor: pointer;
+  color: #3498db;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.error-details pre {
+  background: #2c3e50;
+  color: #ecf0f1;
+  padding: 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.error-actions {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  margin-top: 30px;
+}
+
+.error-actions .btn {
+  min-width: 150px;
+}
+/* تحسينات إضافية */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  gap: 20px;
+}
+
+.error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  gap: 15px;
+  text-align: center;
+  padding: 20px;
+}
+
+.error-icon {
+  font-size: 48px;
+  color: var(--danger-color);
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spinner-small {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 0.6s linear infinite;
+  margin-right: 8px;
+}
+
+.total-count {
+  color: var(--gray-color);
+  font-size: var(--font-size-sm);
+  margin-top: 5px;
+}
+
+.filter-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  background: white;
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+}
+
+.empty-state .icon {
+  font-size: 64px;
+  color: var(--gray-light);
+  margin-bottom: 20px;
+}
+
+.empty-state h3 {
+  font-size: var(--font-size-lg);
+  color: var(--dark-color);
+  margin-bottom: 10px;
+}
+
+.empty-state p {
+  color: var(--gray-color);
+  margin-bottom: 20px;
+}
+
+.delete-confirmation {
+  text-align: center;
+  padding: 20px;
+}
+
+.delete-confirmation .warning-icon {
+  font-size: 48px;
+  color: var(--warning-color);
+  margin-bottom: 20px;
+}
+
+.delete-confirmation .warning-text {
+  color: var(--danger-color);
+  font-size: var(--font-size-sm);
+  margin-top: 10px;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* RTL support for icons */
+[dir="rtl"] .spinner-small {
+  margin-right: 0;
+  margin-left: 8px;
+}
+.connection-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  transition: all 0.3s;
+  cursor: help;
+}
+
+.connection-status.connected {
+   color: var(--success-color);
+  background: rgba(46, 204, 113, 0.1);
+  animation: none;
+}
+
+.connection-status.disconnected {
+  color: var(--danger-color);
+  background: rgba(231, 76, 60, 0.1);
+  animation: pulse 2s infinite;
+}
+/* تحسينات الهيدر الإضافية */
+.header-greeting h2 span {
+  color: var(--secondary-color);
+  font-weight: 700;
+}
+
+.connection-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  transition: all 0.3s;
+  cursor: help;
+}
+
+.connection-status.connected {
+  color: var(--success-color);
+  background: rgba(46, 204, 113, 0.1);
+  animation: none;
+}
+
+.connection-status.disconnected {
+  color: var(--danger-color);
+  background: rgba(231, 76, 60, 0.1);
+  animation: pulse 2s infinite;
+}
+
+.connection-status svg {
+  font-size: 16px;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(231, 76, 60, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(231, 76, 60, 0);
+  }
+}
+
+
+/* تحسين شارة الإشعارات */
+.badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: var(--danger-color);
+  color: white;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 6px;
+  border-radius: 10px;
+  min-width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 5px rgba(231, 76, 60, 0.3);
+}
+
+[dir="ltr"] .badge {
+  right: auto;
+  left: -5px;
+}
+
+/* تحسين قائمة الإشعارات */
+.notifications-menu {
+  width: 380px !important;
+  max-width: 90vw !important;
+  padding: 0 !important;
+}
+
+.notifications-list {
+  max-height: 350px;
+  overflow-y: auto;
+}
+
+.notification-item {
+  display: flex;
+  gap: 15px;
+  padding: 15px 20px;
+  border-bottom: 1px solid var(--border-color);
+  transition: all 0.3s;
+  cursor: pointer;
+}
+
+.notification-item:hover {
+  background: rgba(52, 152, 219, 0.05);
+}
+
+.notification-item.unread {
+  background: rgba(52, 152, 219, 0.02);
+  position: relative;
+}
+
+.notification-item.unread::before {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--secondary-color);
+}
+
+[dir="ltr"] .notification-item.unread::before {
+  right: auto;
+  left: 0;
+}
+
+.notification-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.notification-icon svg {
+  font-size: 18px;
+  color: var(--secondary-color);
+}
+
+.notification-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.notification-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--dark-color);
+  margin-bottom: 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.notification-message {
+  font-size: 12px;
+  color: var(--gray-color);
+  margin-bottom: 5px;
+  line-height: 1.4;
+  
+  /* خاصية line-clamp مع دعم جميع المتصفحات */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  
+  /* الخاصية القياسية للمستقبل */
+  line-clamp: 2;
+  
+  /* دعم للمتصفحات القديمة */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block; /* fallback للمتصفحات التي لا تدعم line-clamp */
+  max-height: calc(1.4em * 2); /* ارتفاع سطرين كبديل */
+  
+  /* يمكن إضافة خاصية اضافية للمتصفحات الحديثة */
+  @supports (line-clamp: 2) {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    line-clamp: 2;
+    max-height: none;
+  }
+}
+
+.notification-time {
+  font-size: 11px;
+  color: var(--gray-light);
+}
+
+/* تحسين قائمة المستخدم */
+.profile-menu {
+  width: 280px !important;
+}
+
+.user-info-header {
+  display: flex;
+  gap: 15px;
+  padding: 20px;
+  background: linear-gradient(135deg, rgba(52,152,219,0.05) 0%, rgba(52,152,219,0.02) 100%);
+}
+
+.user-info-header img {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid white;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+}
+
+.user-info-header h4 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--dark-color);
+  margin-bottom: 5px;
+}
+
+.user-info-header p {
+  font-size: 12px;
+  color: var(--gray-color);
+  margin-bottom: 8px;
+}
+
+/* البحث للجوال */
+.mobile-search {
+  display: none;
+  position: relative;
+  margin-top: 15px;
+  padding: 0 15px;
+  width: 100%;
+}
+
+.mobile-search .search-icon {
+  position: absolute;
+  right: 25px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--gray-color);
+  font-size: 14px;
+  z-index: 1;
+}
+
+[dir="ltr"] .mobile-search .search-icon {
+  right: auto;
+  left: 25px;
+}
+
+.mobile-search .form-control {
+  width: 100%;
+  height: 45px;
+  padding: 0 45px 0 20px;
+  border-radius: 25px;
+  border: 1px solid var(--border-color);
+  background: white;
+  font-size: 14px;
+}
+
+[dir="ltr"] .mobile-search .form-control {
+  padding: 0 20px 0 45px;
+}
+
+/* تحسينات RTL */
+[dir="rtl"] .notification-item.unread::before {
+  right: 0;
+  left: auto;
+}
+
+[dir="rtl"] .badge {
+  right: -5px;
+  left: auto;
+}
+
+/* تحسينات للشاشات الصغيرة */
+@media (max-width: 1200px) {
+  .header-greeting h2 {
+    font-size: 16px;
+  }
+  
+  .header-date {
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 992px) {
+  .admin-header {
+    padding: 0 20px;
+  }
+  
+  .header-greeting {
+    display: none;
+  }
+  
+  .online-indicator {
+    padding: 8px 12px;
+  }
+  
+  .online-label {
+    display: none;
+  }
+  
+  .dropdown-label {
+    display: none;
+  }
+  
+  .user-info {
+    display: none;
+  }
+  
+  .user-menu {
+    padding: 5px;
+  }
+}
+
+@media (max-width: 768px) {
+  .admin-header {
+    height: auto;
+    min-height: 70px;
+    padding: 10px 15px;
+    flex-wrap: wrap;
+  }
+  
+  .header-left {
+    width: auto;
+  }
+  
+  .header-right {
+    flex: 1;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+  
+  .header-search {
+    display: none;
+  }
+  
+  .mobile-search {
+    display: block;
+  }
+  
+  .online-indicator {
+    display: none;
+  }
+  
+  .connection-status {
+    width: 30px;
+    height: 30px;
+  }
+  
+  .notifications-menu {
+    position: fixed;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90% !important;
+  }
+  
+  [dir="ltr"] .notifications-menu {
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+  }
+  
+  .profile-menu {
+    position: fixed;
+    top: 80px;
+    right: 10px;
+    width: 280px !important;
+  }
+}
+
+/* حالة عدم وجود إشعارات */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  color: var(--gray-color);
+  text-align: center;
+}
+
+.empty-state .icon {
+  font-size: 32px;
+  margin-bottom: 15px;
+  color: var(--gray-light);
+}
+
+.empty-state p {
+  font-size: 14px;
+  margin: 0;
+}
+
+/* تحسينات القائمة المنسدلة */
+.dropdown-item.active {
+  background: rgba(52, 152, 219, 0.1);
+  color: var(--secondary-color);
+}
+
+.dropdown-item.active svg {
+  color: var(--secondary-color);
+}
+
+.dropdown-item.text-danger:hover {
+  background: rgba(231, 76, 60, 0.05);
+}
+
+.flag {
+  margin-left: 8px;
+  font-size: 16px;
+}
+
+[dir="ltr"] .flag {
+  margin-left: 0;
+  margin-right: 8px;
+}
+
+/* تحسين زر القائمة للجوال */
+.menu-toggle {
+  background: none;
+  border: none;
+  font-size: 22px;
+  color: var(--primary-color);
+  cursor: pointer;
+  display: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  transition: all 0.3s;
+}
+
+.menu-toggle:hover {
+  background: rgba(52, 152, 219, 0.1);
+  color: var(--secondary-color);
+}
+
+@media (max-width: 768px) {
+  .menu-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
 </file>
 
 <file path="src/styles/modal.css">
@@ -10234,6 +11207,787 @@ export const throttle = (func, limit) => {
     }
   };
 };
+</file>
+
+<file path="public/index.html">
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <meta
+      name="description"
+      content="Web site created using create-react-app"
+    />
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
+    <!--
+      manifest.json provides metadata used when your web app is installed on a
+      user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
+    -->
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    <!--
+      Notice the use of %PUBLIC_URL% in the tags above.
+      It will be replaced with the URL of the `public` folder during the build.
+      Only files inside the `public` folder can be referenced from the HTML.
+
+      Unlike "/favicon.ico" or "favicon.ico", "%PUBLIC_URL%/favicon.ico" will
+      work correctly both with client-side routing and a non-root public URL.
+      Learn how to configure a non-root public URL by running `npm run build`.
+    -->
+    <title>React App test</title>
+  </head>
+  <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"></div>
+    <!--
+      This HTML file is a template.
+      If you open it directly in the browser, you will see an empty page.
+
+      You can add webfonts, meta tags, or analytics to this file.
+      The build step will place the bundled scripts into the <body> tag.
+
+      To begin the development, run `npm start` or `yarn start`.
+      To create a production bundle, use `npm run build` or `yarn build`.
+    -->
+  </body>
+</html>
+</file>
+
+<file path="src/App.js">
+import React, { Suspense } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import { Toaster } from 'react-hot-toast';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { SocketProvider } from './contexts/SocketContext';
+import ProtectedRoute from './components/common/ProtectedRoute';
+import ErrorBoundary from './components/common/ErrorBoundary';
+import Layout from './components/common/Layout';
+import Login from './components/auth/Login';
+ 
+// ✅ استيراد جميع ملفات CSS
+import './i18n';
+import './styles/variables.css';
+import './styles/global.css';
+import './styles/auth.css';
+import './styles/modal.css';
+
+// ✅ إنشاء QueryClient مع إعدادات محسنة
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: (failureCount, error) => {
+        // لا نعيد المحاولة للأخطاء 401 و 403
+        if (error.response?.status === 401 || error.response?.status === 403) {
+          return false;
+        }
+        return failureCount < 2;
+      },
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+      refetchOnWindowFocus: false,
+      staleTime: 5 * 60 * 1000, // 5 دقائق
+      gcTime: 10 * 60 * 1000, // 10 دقائق
+    },
+    mutations: {
+      retry: false,
+    },
+  },
+});
+
+// ✅ تحميل المكونات بشكل كسول (Lazy Loading) لتحسين الأداء
+const Dashboard = React.lazy(() => import('./components/admin/Dashboard'));
+const UsersManagement = React.lazy(() => import('./components/admin/UsersManagement'));
+const RestaurantsManagement = React.lazy(() => import('./components/admin/RestaurantsManagement'));
+const OrdersManagement = React.lazy(() => import('./components/admin/OrdersManagement'));
+const ItemsManagement = React.lazy(() => import('./components/admin/ItemsManagement'));
+const NotificationsManagement = React.lazy(() => import('./components/admin/NotificationsManagement'));
+const ReviewsManagement = React.lazy(() => import('./components/admin/ReviewsManagement'));
+const SupportChat = React.lazy(() => import('./components/admin/SupportChat'));
+const DriverTracking = React.lazy(() => import('./components/admin/DriverTracking'));
+const Statistics = React.lazy(() => import('./components/admin/Statistics'));
+const Settings = React.lazy(() => import('./components/admin/Settings'));
+
+// ✅ مكون مؤقت للتحميل
+const LoadingFallback = () => (
+  <div className="loading-spinner">
+    <div className="spinner"></div>
+    <p>جاري التحميل...</p>
+  </div>
+);
+
+function AppRoutes() {
+  const { isAuthenticated, loading } = useAuth();
+
+  if (loading) {
+    return <LoadingFallback />;
+  }
+
+  return (
+    <ErrorBoundary>
+      <Suspense fallback={<LoadingFallback />}>
+        <Routes>
+          <Route path="/login" element={
+            isAuthenticated ? <Navigate to="/admin/dashboard" /> : <Login />
+          } />
+          
+          <Route path="/admin" element={
+            <ProtectedRoute requiredRole="admin">
+              <Layout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<Navigate to="dashboard" />} />
+            <Route path="dashboard" element={<Dashboard />} />
+            <Route path="users" element={<UsersManagement />} />
+            <Route path="restaurants" element={<RestaurantsManagement />} />
+            <Route path="orders" element={<OrdersManagement />} />
+            <Route path="items" element={<ItemsManagement />} />
+            <Route path="notifications" element={<NotificationsManagement />} />
+            <Route path="reviews" element={<ReviewsManagement />} />
+            <Route path="support" element={<SupportChat />} />
+            <Route path="tracking" element={<DriverTracking />} />
+            <Route path="statistics" element={<Statistics />} />
+            <Route path="settings" element={<Settings />} />
+          </Route>
+          
+          <Route path="/unauthorized" element={
+            <div className="unauthorized-container">
+              <div className="unauthorized-card">
+                <h1>غير مصرح بالوصول</h1>
+                <p>ليس لديك صلاحية للوصول إلى هذه الصفحة</p>
+                <button onClick={() => window.location.href = '/admin/dashboard'} className="btn btn-primary">
+                  العودة للرئيسية
+                </button>
+              </div>
+            </div>
+          } />
+          
+          <Route path="*" element={<Navigate to="/admin" />} />
+        </Routes>
+      </Suspense>
+    </ErrorBoundary>
+  );
+}
+
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <AuthProvider>
+          <SocketProvider>
+            <AppRoutes />
+            <Toaster
+              position="top-center"
+              toastOptions={{
+                duration: 4000,
+                className: 'toast',
+                success: {
+                  className: 'toast-success',
+                  duration: 3000,
+                },
+                error: {
+                  className: 'toast-error',
+                  duration: 5000,
+                },
+                loading: {
+                  className: 'toast-info',
+                  duration: Infinity,
+                },
+              }}
+            />
+          </SocketProvider>
+        </AuthProvider>
+      </BrowserRouter>
+      <ReactQueryDevtools initialIsOpen={false} />
+    </QueryClientProvider>
+  );
+}
+
+export default App;
+</file>
+
+<file path="src/styles/auth.css">
+.auth-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
+}
+
+.auth-card {
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  padding: 40px;
+  width: 100%;
+  max-width: 450px;
+}
+
+.auth-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.auth-logo {
+  width: 120px;
+  height: 120px;
+  object-fit: contain;
+  margin-bottom: 20px;
+}
+
+.auth-header h1 {
+  color: #333;
+  margin-bottom: 10px;
+  font-size: 24px;
+}
+
+.auth-header p {
+  color: #666;
+  font-size: 16px;
+}
+
+.role-selector {
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+.role-selector p {
+  color: #666;
+  margin-bottom: 15px;
+}
+
+.role-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.role-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border: 2px solid #e0e0e0;
+  background: white;
+  border-radius: 30px;
+  color: #666;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.role-btn:hover {
+  border-color: #667eea;
+  color: #667eea;
+}
+
+.role-btn.active {
+  background: #667eea;
+  border-color: #667eea;
+  color: white;
+}
+
+.role-btn svg {
+  font-size: 16px;
+}
+
+.auth-form {
+  margin-bottom: 20px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.input-icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-icon svg {
+  position: absolute;
+  right: 15px;
+  color: #999;
+  font-size: 18px;
+}
+
+.form-control {
+  width: 100%;
+  padding: 15px 45px 15px 15px;
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  font-size: 16px;
+  transition: all 0.3s;
+  direction: rtl;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.form-control.error {
+  border-color: #f44336;
+}
+
+.error-message {
+  display: block;
+  margin-top: 5px;
+  color: #f44336;
+  font-size: 12px;
+  text-align: right;
+}
+
+.btn {
+  padding: 15px 30px;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  width: 100%;
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-block {
+  width: 100%;
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: #667eea;
+  font-size: 14px;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.btn-link:hover {
+  color: #764ba2;
+}
+
+.auth-footer {
+  text-align: center;
+  padding-top: 20px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.spinner-small {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 1s ease-in-out infinite;
+  margin-left: 10px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.dev-info {
+  margin-top: 20px;
+  text-align: center;
+  font-size: 12px;
+  color: #999;
+}
+
+.dev-info a {
+  color: #999;
+  text-decoration: none;
+}
+
+.dev-info a:hover {
+  color: #667eea;
+  text-decoration: underline;
+}
+</file>
+
+<file path="src/components/auth/Login.jsx">
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
+import { FaEnvelope, FaLock, FaPhone, FaUser, FaStore, FaMotorcycle } from 'react-icons/fa';
+import { useTranslation } from 'react-i18next';
+import toast from 'react-hot-toast';
+
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
+const Login = () => {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const { login } = useAuth();
+  
+  const [isLoginMode, setIsLoginMode] = useState(true);
+  const [selectedRole, setSelectedRole] = useState('client');
+  const [formData, setFormData] = useState({
+    phone: '',
+    email: '',
+    password: '',
+    name: '',
+    confirmPassword: '',
+  });
+  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
+
+  // التحقق من صحة البيانات
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (!isLoginMode) {
+      if (!formData.name || formData.name.length < 2) {
+        newErrors.name = 'الاسم يجب أن يكون على الأقل حرفين';
+      }
+    }
+
+    if (!formData.phone && !formData.email) {
+      newErrors.phone = 'رقم الهاتف أو البريد الإلكتروني مطلوب';
+    }
+
+    if (!formData.password || formData.password.length < 6) {
+      newErrors.password = 'كلمة المرور يجب أن تكون 6 أحرف على الأقل';
+    }
+
+    if (!isLoginMode && formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'كلمات المرور غير متطابقة';
+    }
+
+    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = 'البريد الإلكتروني غير صالح';
+    }
+
+    if (formData.phone && !/^\+?[\d\s\-\(\)]+$/.test(formData.phone)) {
+      newErrors.phone = 'رقم الهاتف غير صالح';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value,
+    }));
+    // مسح الخطأ عند التعديل
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: null }));
+    }
+  };
+
+  const handleLogin = async () => {
+    // محاولة الدخول بالهاتف أولاً ثم بالبريد
+    const credentials = formData.phone 
+      ? { phone: formData.phone, password: formData.password }
+      : { email: formData.email, password: formData.password };
+    
+    const result = await login(credentials);
+    
+    if (result.success) {
+      // ✅ توجيه المستخدم حسب دوره
+      const role = result.user?.role;
+      
+      switch(role) {
+        case 'admin':
+          navigate('/admin/dashboard');
+          toast.success('مرحباً بك في لوحة تحكم الأدمن');
+          break;
+        case 'restaurant_owner':
+          navigate('/restaurant/dashboard');
+          toast.success('مرحباً بك في لوحة تحكم المطعم');
+          break;
+        case 'driver':
+          navigate('/driver/dashboard');
+          toast.success('مرحباً بك في لوحة تحكم المندوب');
+          break;
+        default:
+          navigate('/');
+          toast.success('تم تسجيل الدخول بنجاح');
+      }
+    } else {
+      toast.error(result.message || 'فشل تسجيل الدخول');
+    }
+  };
+
+  const handleRegister = async () => {
+    // ✅ استخدام المسار الصحيح للتسجيل
+    const registerEndpoint = `${API_URL}/api/auth/register/complete`;
+    
+    const response = await fetch(registerEndpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        name: formData.name,
+        phone: formData.phone,
+        email: formData.email || undefined,
+        password: formData.password,
+        role: selectedRole, // ✅ استخدام الدور المختار
+      }),
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      toast.success('تم التسجيل بنجاح! يمكنك تسجيل الدخول الآن');
+      setIsLoginMode(true);
+      setFormData({
+        ...formData,
+        password: '',
+        confirmPassword: '',
+      });
+      
+      // ✅ إذا كان الباك اند يرسل توكن مباشرة بعد التسجيل
+      if (data.token) {
+        // تخزين التوكن وتسجيل الدخول مباشرة
+        localStorage.setItem('token', data.token);
+        // إعادة تحميل الصفحة أو التوجيه
+        window.location.href = `/${selectedRole}/dashboard`;
+      }
+    } else {
+      toast.error(data.message || 'فشل التسجيل');
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      toast.error('يرجى تصحيح الأخطاء في النموذج');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      if (isLoginMode) {
+        await handleLogin();
+      } else {
+        await handleRegister();
+      }
+    } catch (error) {
+      console.error('❌ Auth error:', error);
+      toast.error(error.message || 'حدث خطأ في الاتصال بالخادم');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // الحصول على الصور من الباك اند مع fallback
+  const getImageUrl = (imageName) => {
+    return `${API_URL}/images/${imageName}`;
+  };
+
+  return (
+    <div className="auth-container">
+      <div className="auth-card">
+        <div className="auth-header">
+          {/* ✅ استخدام الصور من الباك اند */}
+          <img 
+            src={getImageUrl('logo.png')} 
+            alt="Logo" 
+            className="auth-logo"
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src = 'https://via.placeholder.com/150x150?text=Logo';
+            }}
+          />
+          <h1>نظام التوصيل</h1>
+          <p>{isLoginMode ? 'مرحباً بعودتك' : 'إنشاء حساب جديد'}</p>
+        </div>
+
+        {!isLoginMode && (
+          <div className="role-selector">
+            <p>اختر نوع الحساب:</p>
+            <div className="role-buttons">
+              <button
+                type="button"
+                className={`role-btn ${selectedRole === 'client' ? 'active' : ''}`}
+                onClick={() => setSelectedRole('client')}
+              >
+                <FaUser /> عميل
+              </button>
+              <button
+                type="button"
+                className={`role-btn ${selectedRole === 'restaurant_owner' ? 'active' : ''}`}
+                onClick={() => setSelectedRole('restaurant_owner')}
+              >
+                <FaStore /> صاحب مطعم
+              </button>
+              <button
+                type="button"
+                className={`role-btn ${selectedRole === 'driver' ? 'active' : ''}`}
+                onClick={() => setSelectedRole('driver')}
+              >
+                <FaMotorcycle /> مندوب
+              </button>
+            </div>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="auth-form">
+          {!isLoginMode && (
+            <div className="form-group">
+              <div className="input-icon">
+                <FaUser />
+                <input
+                  type="text"
+                  name="name"
+                  placeholder="الاسم الكامل"
+                  value={formData.name}
+                  onChange={handleChange}
+                  required
+                  className={`form-control ${errors.name ? 'error' : ''}`}
+                />
+              </div>
+              {errors.name && <span className="error-message">{errors.name}</span>}
+            </div>
+          )}
+
+          <div className="form-group">
+            <div className="input-icon">
+              <FaPhone />
+              <input
+                type="tel"
+                name="phone"
+                placeholder="رقم الهاتف (مثال: +22712345678)"
+                value={formData.phone}
+                onChange={handleChange}
+                required={!formData.email}
+                className={`form-control ${errors.phone ? 'error' : ''}`}
+              />
+            </div>
+            {errors.phone && <span className="error-message">{errors.phone}</span>}
+          </div>
+
+          <div className="form-group">
+            <div className="input-icon">
+              <FaEnvelope />
+              <input
+                type="email"
+                name="email"
+                placeholder="البريد الإلكتروني (اختياري)"
+                value={formData.email}
+                onChange={handleChange}
+                className={`form-control ${errors.email ? 'error' : ''}`}
+              />
+            </div>
+            {errors.email && <span className="error-message">{errors.email}</span>}
+          </div>
+
+          <div className="form-group">
+            <div className="input-icon">
+              <FaLock />
+              <input
+                type="password"
+                name="password"
+                placeholder="كلمة المرور"
+                value={formData.password}
+                onChange={handleChange}
+                required
+                className={`form-control ${errors.password ? 'error' : ''}`}
+              />
+            </div>
+            {errors.password && <span className="error-message">{errors.password}</span>}
+          </div>
+
+          {!isLoginMode && (
+            <div className="form-group">
+              <div className="input-icon">
+                <FaLock />
+                <input
+                  type="password"
+                  name="confirmPassword"
+                  placeholder="تأكيد كلمة المرور"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  required
+                  className={`form-control ${errors.confirmPassword ? 'error' : ''}`}
+                />
+              </div>
+              {errors.confirmPassword && <span className="error-message">{errors.confirmPassword}</span>}
+            </div>
+          )}
+
+          <button 
+            type="submit" 
+            className="btn btn-primary btn-block"
+            disabled={loading}
+          >
+            {loading ? (
+              <>
+                <span className="spinner-small"></span>
+                جاري المعالجة...
+              </>
+            ) : isLoginMode ? (
+              'تسجيل الدخول'
+            ) : (
+              'إنشاء حساب'
+            )}
+          </button>
+        </form>
+
+        <div className="auth-footer">
+          <button
+            type="button"
+            onClick={() => {
+              setIsLoginMode(!isLoginMode);
+              setErrors({});
+              setFormData({
+                phone: '',
+                email: '',
+                password: '',
+                name: '',
+                confirmPassword: '',
+              });
+            }}
+            className="btn-link"
+          >
+            {isLoginMode ? 'ليس لديك حساب؟ سجل الآن' : 'لديك حساب بالفعل؟ سجل دخول'}
+          </button>
+        </div>
+
+        {/* ✅ رابط للصور المتاحة (مساعدة للمطورين) */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="dev-info">
+            <small>
+              <a href={`${API_URL}/api/assets/images`} target="_blank" rel="noreferrer">
+                عرض الصور المتاحة
+              </a>
+            </small>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default Login;
 </file>
 
 </files>

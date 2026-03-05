@@ -1,3 +1,4 @@
+// src/utils/helpers.js
 import { format, formatDistance, parseISO } from 'date-fns';
 import { ar, enUS } from 'date-fns/locale';
 
@@ -77,11 +78,11 @@ export const formatNumber = (number, locale = 'ar') => {
   }
 };
 
-// تنسيق الهاتف
+// ✅ تنسيق الهاتف - أكثر مرونة
 export const formatPhoneNumber = (phone) => {
   if (!phone) return '-';
   
-  // تنظيف رقم الهاتف
+  // تنظيف رقم الهاتف من المسافات والرموز
   const cleaned = phone.replace(/\D/g, '');
   
   // تنسيق للأرقام السعودية
@@ -93,19 +94,63 @@ export const formatPhoneNumber = (phone) => {
     return `+${cleaned.slice(0, 3)} ${cleaned.slice(3, 5)} ${cleaned.slice(5, 8)} ${cleaned.slice(8)}`;
   }
   
+  // تنسيق عام للأرقام الدولية
+  if (cleaned.length > 7) {
+    // إضافة + إذا كان الرقم يبدأ بـ 00
+    if (phone.startsWith('00')) {
+      return `+${cleaned.slice(2)}`;
+    }
+    // إضافة + إذا كان الرقم لا يحتوي على +
+    if (!phone.startsWith('+') && cleaned.length > 7) {
+      return `+${cleaned}`;
+    }
+  }
+  
   return phone;
 };
 
-// التحقق من البريد الإلكتروني
+// ✅ التحقق من البريد الإلكتروني - مع دعم النطاقات العربية
 export const isValidEmail = (email) => {
+  if (!email) return false;
+  // دعم البريد الإلكتروني مع نطاقات مثل .com, .net, .org, .sa, إلخ
   const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return re.test(email);
 };
 
-// التحقق من رقم الهاتف
+// ✅ التحقق من رقم الهاتف - مرن جداً
 export const isValidPhone = (phone) => {
-  const re = /^(009665|9665|\+9665|05|5)(5|0|3|6|4|9|1|8|7)([0-9]{7})$/;
-  return re.test(phone);
+  if (!phone) return false;
+  
+  // تنظيف الرقم من المسافات والرموز
+  const cleaned = phone.replace(/\D/g, '');
+  
+  // التحقق من الطول المناسب (بين 8 و 15 رقم)
+  if (cleaned.length < 8 || cleaned.length > 15) {
+    return false;
+  }
+  
+  return true;
+};
+
+// ✅ استخراج رمز الدولة من رقم الهاتف
+export const getCountryCode = (phone) => {
+  if (!phone) return null;
+  
+  const cleaned = phone.replace(/\D/g, '');
+  
+  if (cleaned.startsWith('966')) return 'SA';
+  if (cleaned.startsWith('971')) return 'AE';
+  if (cleaned.startsWith('974')) return 'QA';
+  if (cleaned.startsWith('965')) return 'KW';
+  if (cleaned.startsWith('973')) return 'BH';
+  if (cleaned.startsWith('968')) return 'OM';
+  if (cleaned.startsWith('20')) return 'EG';
+  if (cleaned.startsWith('212')) return 'MA';
+  if (cleaned.startsWith('213')) return 'DZ';
+  if (cleaned.startsWith('216')) return 'TN';
+  if (cleaned.startsWith('218')) return 'LY';
+  
+  return 'OTHER';
 };
 
 // إنشاء معرف فريد
@@ -123,6 +168,7 @@ export const truncateText = (text, maxLength = 100) => {
 // تحويل حجم الملف
 export const formatFileSize = (bytes) => {
   if (bytes === 0) return '0 Bytes';
+  if (!bytes) return '-';
   
   const k = 1024;
   const sizes = ['Bytes', 'KB', 'MB', 'GB'];
@@ -145,7 +191,7 @@ export const getQueryParams = (url) => {
 
 // بناء URL مع المعلمات
 export const buildUrl = (baseUrl, params = {}) => {
-  const url = new URL(baseUrl);
+  const url = new URL(baseUrl, window.location.origin);
   
   Object.keys(params).forEach(key => {
     if (params[key] !== undefined && params[key] !== null && params[key] !== '') {
@@ -158,6 +204,8 @@ export const buildUrl = (baseUrl, params = {}) => {
 
 // تجميع البيانات
 export const groupBy = (array, key) => {
+  if (!array || !Array.isArray(array)) return {};
+  
   return array.reduce((result, item) => {
     const groupKey = item[key];
     result[groupKey] = result[groupKey] || [];
@@ -168,37 +216,45 @@ export const groupBy = (array, key) => {
 
 // حساب الإجماليات
 export const calculateSum = (array, key) => {
+  if (!array || !Array.isArray(array)) return 0;
   return array.reduce((sum, item) => sum + (item[key] || 0), 0);
 };
 
 // حساب المتوسط
 export const calculateAverage = (array, key) => {
-  if (array.length === 0) return 0;
+  if (!array || !Array.isArray(array) || array.length === 0) return 0;
   const sum = calculateSum(array, key);
   return sum / array.length;
 };
 
 // ترتيب البيانات
 export const sortBy = (array, key, order = 'asc') => {
+  if (!array || !Array.isArray(array)) return [];
+  
   return [...array].sort((a, b) => {
+    const valA = a[key] || 0;
+    const valB = b[key] || 0;
+    
     if (order === 'asc') {
-      return a[key] > b[key] ? 1 : -1;
+      return valA > valB ? 1 : -1;
     } else {
-      return a[key] < b[key] ? 1 : -1;
+      return valA < valB ? 1 : -1;
     }
   });
 };
 
 // تصفية البيانات
 export const filterBy = (array, key, value) => {
+  if (!array || !Array.isArray(array)) return [];
   return array.filter(item => item[key] === value);
 };
 
 // البحث في البيانات
 export const searchInArray = (array, searchTerm, keys = []) => {
+  if (!array || !Array.isArray(array)) return [];
   if (!searchTerm) return array;
   
-  const term = searchTerm.toLowerCase();
+  const term = searchTerm.toLowerCase().trim();
   
   return array.filter(item => {
     return keys.some(key => {
@@ -211,15 +267,23 @@ export const searchInArray = (array, searchTerm, keys = []) => {
 
 // تحويل الألوان
 export const hexToRgba = (hex, alpha = 1) => {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
+  if (!hex) return `rgba(0,0,0,${alpha})`;
   
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  try {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  } catch (error) {
+    return `rgba(0,0,0,${alpha})`;
+  }
 };
 
 // التحقق من الصلاحيات
 export const hasPermission = (userRole, requiredRole) => {
+  if (!userRole) return false;
+  
   const roleHierarchy = {
     'admin': 4,
     'restaurant_owner': 3,
@@ -270,7 +334,7 @@ export const getWithExpiry = (key) => {
 
 // إنشاء CSV من البيانات
 export const convertToCSV = (data, headers) => {
-  if (!data || data.length === 0) return '';
+  if (!data || !Array.isArray(data) || data.length === 0) return '';
   
   const csvRows = [];
   
@@ -291,13 +355,15 @@ export const convertToCSV = (data, headers) => {
 
 // تحميل ملف CSV
 export const downloadCSV = (data, filename) => {
-  const blob = new Blob([data], { type: 'text/csv' });
+  const blob = new Blob([data], { type: 'text/csv;charset=utf-8;' });
   const url = window.URL.createObjectURL(blob);
   const a = document.createElement('a');
   
   a.setAttribute('href', url);
   a.setAttribute('download', filename);
+  document.body.appendChild(a);
   a.click();
+  document.body.removeChild(a);
   
   window.URL.revokeObjectURL(url);
 };
@@ -338,4 +404,30 @@ export const throttle = (func, limit) => {
       inThrottle = setTimeout(() => inThrottle = false, limit);
     }
   };
+};
+
+// ✅ التحقق من كائن فارغ
+export const isEmptyObject = (obj) => {
+  return obj && Object.keys(obj).length === 0 && obj.constructor === Object;
+};
+
+// ✅ تنظيف الكائن من القيم الفارغة
+export const cleanObject = (obj) => {
+  if (!obj || typeof obj !== 'object') return obj;
+  
+  return Object.fromEntries(
+    Object.entries(obj).filter(([_, v]) => 
+      v !== null && v !== undefined && v !== ''
+    )
+  );
+};
+
+// ✅ إنشاء خطأ قابل للقراءة
+export const getErrorMessage = (error) => {
+  if (typeof error === 'string') return error;
+  
+  return error?.response?.data?.message || 
+         error?.response?.data?.error || 
+         error?.message || 
+         'حدث خطأ غير متوقع';
 };

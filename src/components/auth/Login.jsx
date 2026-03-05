@@ -1,11 +1,12 @@
+// src/components/auth/Login.jsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { FaEnvelope, FaLock, FaPhone, FaUser, FaStore, FaMotorcycle } from 'react-icons/fa';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
+import api from '../../services/api'; // ✅ استيراد api مباشرة
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
 const Login = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -49,8 +50,13 @@ const Login = () => {
       newErrors.email = 'البريد الإلكتروني غير صالح';
     }
 
-    if (formData.phone && !/^\+?[\d\s\-\(\)]+$/.test(formData.phone)) {
-      newErrors.phone = 'رقم الهاتف غير صالح';
+    // ✅ تحسين التحقق من رقم الهاتف - أكثر مرونة
+    if (formData.phone) {
+      // إزالة المسافات والرموز غير الرقمية
+      const cleanedPhone = formData.phone.replace(/\D/g, '');
+      if (cleanedPhone.length < 8 || cleanedPhone.length > 15) {
+        newErrors.phone = 'رقم الهاتف غير صالح (يجب أن يكون بين 8 و 15 رقم)';
+      }
     }
 
     setErrors(newErrors);
@@ -78,7 +84,6 @@ const Login = () => {
     const result = await login(credentials);
     
     if (result.success) {
-      // ✅ توجيه المستخدم حسب دوره
       const role = result.user?.role;
       
       switch(role) {
@@ -98,49 +103,54 @@ const Login = () => {
           navigate('/');
           toast.success('تم تسجيل الدخول بنجاح');
       }
-    } else {
-      toast.error(result.message || 'فشل تسجيل الدخول');
     }
   };
 
   const handleRegister = async () => {
-    // ✅ استخدام المسار الصحيح للتسجيل
-    const registerEndpoint = `${API_URL}/api/auth/register/complete`;
-    
-    const response = await fetch(registerEndpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
+    try {
+      // ✅ استخدام api مباشرة - سيرسل التوكن تلقائياً بعد التسجيل
+      const response = await api.post('/auth/register/complete', {
         name: formData.name,
         phone: formData.phone,
         email: formData.email || undefined,
         password: formData.password,
-        role: selectedRole, // ✅ استخدام الدور المختار
-      }),
-    });
-
-    const data = await response.json();
-
-    if (response.ok) {
-      toast.success('تم التسجيل بنجاح! يمكنك تسجيل الدخول الآن');
-      setIsLoginMode(true);
-      setFormData({
-        ...formData,
-        password: '',
-        confirmPassword: '',
+        role: selectedRole,
       });
-      
-      // ✅ إذا كان الباك اند يرسل توكن مباشرة بعد التسجيل
-      if (data.token) {
-        // تخزين التوكن وتسجيل الدخول مباشرة
-        localStorage.setItem('token', data.token);
-        // إعادة تحميل الصفحة أو التوجيه
-        window.location.href = `/${selectedRole}/dashboard`;
+
+      const data = response.data;
+
+      if (data.success) {
+        toast.success('تم التسجيل بنجاح! يمكنك تسجيل الدخول الآن');
+        setIsLoginMode(true);
+        setFormData({
+          ...formData,
+          password: '',
+          confirmPassword: '',
+        });
+        
+        // ✅ إذا كان الباك اند يرسل توكن مباشرة بعد التسجيل
+        if (data.data?.accessToken) {
+          localStorage.setItem('accessToken', data.data.accessToken);
+          if (data.data.refreshToken) {
+            localStorage.setItem('refreshToken', data.data.refreshToken);
+          }
+          if (data.data.user) {
+            localStorage.setItem('user', JSON.stringify(data.data.user));
+          }
+          
+          // توجيه المستخدم حسب دوره
+          const userRole = data.data.user?.role || selectedRole;
+          window.location.href = `/${userRole}/dashboard`;
+        }
+      } else {
+        toast.error(data.message || 'فشل التسجيل');
       }
-    } else {
-      toast.error(data.message || 'فشل التسجيل');
+    } catch (error) {
+      console.error('❌ Registration error:', error);
+      const errorMessage = error.response?.data?.message || 
+                          error.response?.data?.error || 
+                          'فشل الاتصال بالخادم';
+      toast.error(errorMessage);
     }
   };
 
@@ -168,18 +178,12 @@ const Login = () => {
     }
   };
 
-  // الحصول على الصور من الباك اند مع fallback
-  const getImageUrl = (imageName) => {
-    return `${API_URL}/images/${imageName}`;
-  };
-
   return (
     <div className="auth-container">
       <div className="auth-card">
         <div className="auth-header">
-          {/* ✅ استخدام الصور من الباك اند */}
           <img 
-            src={getImageUrl('logo.png')} 
+            src="/logo192.png" 
             alt="Logo" 
             className="auth-logo"
             onError={(e) => {
@@ -231,7 +235,7 @@ const Login = () => {
                   placeholder="الاسم الكامل"
                   value={formData.name}
                   onChange={handleChange}
-                  required
+                  required={!isLoginMode}
                   className={`form-control ${errors.name ? 'error' : ''}`}
                 />
               </div>
@@ -245,10 +249,9 @@ const Login = () => {
               <input
                 type="tel"
                 name="phone"
-                placeholder="رقم الهاتف (مثال: +22712345678)"
+                placeholder="رقم الهاتف"
                 value={formData.phone}
                 onChange={handleChange}
-                required={!formData.email}
                 className={`form-control ${errors.phone ? 'error' : ''}`}
               />
             </div>
@@ -296,7 +299,7 @@ const Login = () => {
                   placeholder="تأكيد كلمة المرور"
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  required
+                  required={!isLoginMode}
                   className={`form-control ${errors.confirmPassword ? 'error' : ''}`}
                 />
               </div>
@@ -341,17 +344,6 @@ const Login = () => {
             {isLoginMode ? 'ليس لديك حساب؟ سجل الآن' : 'لديك حساب بالفعل؟ سجل دخول'}
           </button>
         </div>
-
-        {/* ✅ رابط للصور المتاحة (مساعدة للمطورين) */}
-        {process.env.NODE_ENV === 'development' && (
-          <div className="dev-info">
-            <small>
-              <a href={`${API_URL}/api/assets/images`} target="_blank" rel="noreferrer">
-                عرض الصور المتاحة
-              </a>
-            </small>
-          </div>
-        )}
       </div>
     </div>
   );
