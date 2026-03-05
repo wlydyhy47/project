@@ -38,8 +38,8 @@ const Login = () => {
       newErrors.phone = 'رقم الهاتف أو البريد الإلكتروني مطلوب';
     }
 
-    if (!formData.password || formData.password.length < 6) {
-      newErrors.password = 'كلمة المرور يجب أن تكون 6 أحرف على الأقل';
+    if (!formData.password || formData.password.length < 4) {
+      newErrors.password = 'كلمة المرور يجب أن تكون 4 أحرف على الأقل';
     }
 
     if (!isLoginMode && formData.password !== formData.confirmPassword) {
@@ -54,8 +54,8 @@ const Login = () => {
     if (formData.phone) {
       // إزالة المسافات والرموز غير الرقمية
       const cleanedPhone = formData.phone.replace(/\D/g, '');
-      if (cleanedPhone.length < 4 || cleanedPhone.length > 15) {
-        newErrors.phone = 'رقم الهاتف غير صالح (يجب أن يكون بين 4 و 15 رقم)';
+      if (cleanedPhone.length < 8 || cleanedPhone.length > 15) {
+        newErrors.phone = 'رقم الهاتف غير صالح (يجب أن يكون بين 8 و 15 رقم)';
       }
     }
 
