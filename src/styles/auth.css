@@ -1,16 +1,16 @@
 .auth-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   padding: 20px;
 }
 
 .auth-card {
   background: white;
-  border-radius: var(--card-border-radius);
-  box-shadow: var(--box-shadow-lg);
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   padding: 40px;
   width: 100%;
   max-width: 450px;
@@ -22,69 +22,195 @@
 }
 
 .auth-logo {
-  width: 80px;
-  height: 80px;
+  width: 120px;
+  height: 120px;
+  object-fit: contain;
   margin-bottom: 20px;
 }
 
 .auth-header h1 {
-  color: var(--primary-color);
-  font-size: 24px;
+  color: #333;
   margin-bottom: 10px;
+  font-size: 24px;
 }
 
 .auth-header p {
   color: #666;
-  font-size: 14px;
+  font-size: 16px;
 }
 
-.auth-form .form-group {
+.role-selector {
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+.role-selector p {
+  color: #666;
+  margin-bottom: 15px;
+}
+
+.role-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.role-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border: 2px solid #e0e0e0;
+  background: white;
+  border-radius: 30px;
+  color: #666;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.role-btn:hover {
+  border-color: #667eea;
+  color: #667eea;
+}
+
+.role-btn.active {
+  background: #667eea;
+  border-color: #667eea;
+  color: white;
+}
+
+.role-btn svg {
+  font-size: 16px;
+}
+
+.auth-form {
+  margin-bottom: 20px;
+}
+
+.form-group {
   margin-bottom: 20px;
 }
 
 .input-icon {
   position: relative;
+  display: flex;
+  align-items: center;
 }
 
 .input-icon svg {
   position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
+  right: 15px;
   color: #999;
+  font-size: 18px;
 }
 
-.input-icon input {
-  padding-right: 40px;
+.form-control {
+  width: 100%;
+  padding: 15px 45px 15px 15px;
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  font-size: 16px;
+  transition: all 0.3s;
+  direction: rtl;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.form-control.error {
+  border-color: #f44336;
+}
+
+.error-message {
+  display: block;
+  margin-top: 5px;
+  color: #f44336;
+  font-size: 12px;
+  text-align: right;
+}
+
+.btn {
+  padding: 15px 30px;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  width: 100%;
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .btn-block {
   width: 100%;
-  padding: 12px;
-  font-size: 16px;
-}
-
-.auth-footer {
-  text-align: center;
-  margin-top: 20px;
 }
 
 .btn-link {
   background: none;
   border: none;
-  color: var(--primary-color);
-  cursor: pointer;
+  color: #667eea;
   font-size: 14px;
+  cursor: pointer;
   text-decoration: underline;
 }
 
 .btn-link:hover {
-  color: var(--secondary-color);
+  color: #764ba2;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-  .auth-card {
-    padding: 30px 20px;
-  }
+.auth-footer {
+  text-align: center;
+  padding-top: 20px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.spinner-small {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 1s ease-in-out infinite;
+  margin-left: 10px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.dev-info {
+  margin-top: 20px;
+  text-align: center;
+  font-size: 12px;
+  color: #999;
+}
+
+.dev-info a {
+  color: #999;
+  text-decoration: none;
+}
+
+.dev-info a:hover {
+  color: #667eea;
+  text-decoration: underline;
 }

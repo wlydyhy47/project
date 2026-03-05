@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { FaEnvelope, FaLock, FaPhone, FaUser } from 'react-icons/fa';
+import { FaEnvelope, FaLock, FaPhone, FaUser, FaStore, FaMotorcycle } from 'react-icons/fa';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 
@@ -10,7 +10,9 @@ const Login = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { login } = useAuth();
+  
   const [isLoginMode, setIsLoginMode] = useState(true);
+  const [selectedRole, setSelectedRole] = useState('client');
   const [formData, setFormData] = useState({
     phone: '',
     email: '',
@@ -19,93 +21,204 @@ const Login = () => {
     confirmPassword: '',
   });
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
+
+  // التحقق من صحة البيانات
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (!isLoginMode) {
+      if (!formData.name || formData.name.length < 2) {
+        newErrors.name = 'الاسم يجب أن يكون على الأقل حرفين';
+      }
+    }
+
+    if (!formData.phone && !formData.email) {
+      newErrors.phone = 'رقم الهاتف أو البريد الإلكتروني مطلوب';
+    }
+
+    if (!formData.password || formData.password.length < 6) {
+      newErrors.password = 'كلمة المرور يجب أن تكون 6 أحرف على الأقل';
+    }
+
+    if (!isLoginMode && formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'كلمات المرور غير متطابقة';
+    }
+
+    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = 'البريد الإلكتروني غير صالح';
+    }
+
+    if (formData.phone && !/^\+?[\d\s\-\(\)]+$/.test(formData.phone)) {
+      newErrors.phone = 'رقم الهاتف غير صالح';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value,
+    }));
+    // مسح الخطأ عند التعديل
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: null }));
+    }
+  };
+
+  const handleLogin = async () => {
+    // محاولة الدخول بالهاتف أولاً ثم بالبريد
+    const credentials = formData.phone 
+      ? { phone: formData.phone, password: formData.password }
+      : { email: formData.email, password: formData.password };
+    
+    const result = await login(credentials);
+    
+    if (result.success) {
+      // ✅ توجيه المستخدم حسب دوره
+      const role = result.user?.role;
+      
+      switch(role) {
+        case 'admin':
+          navigate('/admin/dashboard');
+          toast.success('مرحباً بك في لوحة تحكم الأدمن');
+          break;
+        case 'restaurant_owner':
+          navigate('/restaurant/dashboard');
+          toast.success('مرحباً بك في لوحة تحكم المطعم');
+          break;
+        case 'driver':
+          navigate('/driver/dashboard');
+          toast.success('مرحباً بك في لوحة تحكم المندوب');
+          break;
+        default:
+          navigate('/');
+          toast.success('تم تسجيل الدخول بنجاح');
+      }
+    } else {
+      toast.error(result.message || 'فشل تسجيل الدخول');
+    }
+  };
+
+  const handleRegister = async () => {
+    // ✅ استخدام المسار الصحيح للتسجيل
+    const registerEndpoint = `${API_URL}/api/auth/register/complete`;
+    
+    const response = await fetch(registerEndpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        name: formData.name,
+        phone: formData.phone,
+        email: formData.email || undefined,
+        password: formData.password,
+        role: selectedRole, // ✅ استخدام الدور المختار
+      }),
     });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      toast.success('تم التسجيل بنجاح! يمكنك تسجيل الدخول الآن');
+      setIsLoginMode(true);
+      setFormData({
+        ...formData,
+        password: '',
+        confirmPassword: '',
+      });
+      
+      // ✅ إذا كان الباك اند يرسل توكن مباشرة بعد التسجيل
+      if (data.token) {
+        // تخزين التوكن وتسجيل الدخول مباشرة
+        localStorage.setItem('token', data.token);
+        // إعادة تحميل الصفحة أو التوجيه
+        window.location.href = `/${selectedRole}/dashboard`;
+      }
+    } else {
+      toast.error(data.message || 'فشل التسجيل');
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!validateForm()) {
+      toast.error('يرجى تصحيح الأخطاء في النموذج');
+      return;
+    }
+
     setLoading(true);
 
     try {
       if (isLoginMode) {
-        // تسجيل الدخول
-        const credentials = formData.email 
-          ? { email: formData.email, password: formData.password }
-          : { phone: formData.phone, password: formData.password };
-        
-        const result = await login(credentials);
-        
-        if (result.success) {
-          // ✅ التأكد من وجود user والـ role
-          if (result.user && result.user.role === 'admin') {
-            navigate('/admin/dashboard');
-            toast.success(t('login_success'));
-          } else {
-            toast.error(t('unauthorized_access'));
-            // تسجيل الخروج لأن المستخدم ليس أدمن
-            setTimeout(() => {
-              window.location.href = '/login';
-            }, 2000);
-          }
-        }
+        await handleLogin();
       } else {
-        // تسجيل جديد
-        if (formData.password !== formData.confirmPassword) {
-          toast.error(t('passwords_dont_match'));
-          setLoading(false);
-          return;
-        }
-
-        const response = await fetch('https://backend-walid-yahaya.onrender.com/api/auth/register/complete', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            name: formData.name,
-            phone: formData.phone,
-            email: formData.email || undefined,
-            password: formData.password,
-            role: 'admin', // ✅ محاولة تسجيل كأدمن
-          }),
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-          toast.success(t('registration_success'));
-          setIsLoginMode(true);
-          // ✅ تعبئة رقم الهاتف تلقائياً
-          setFormData({
-            ...formData,
-            password: '',
-            confirmPassword: '',
-          });
-        } else {
-          toast.error(data.message || t('registration_failed'));
-        }
+        await handleRegister();
       }
     } catch (error) {
-      console.error('Auth error:', error);
-      toast.error(t('auth_error'));
+      console.error('❌ Auth error:', error);
+      toast.error(error.message || 'حدث خطأ في الاتصال بالخادم');
     } finally {
       setLoading(false);
     }
+  };
+
+  // الحصول على الصور من الباك اند مع fallback
+  const getImageUrl = (imageName) => {
+    return `${API_URL}/images/${imageName}`;
   };
 
   return (
     <div className="auth-container">
       <div className="auth-card">
         <div className="auth-header">
-          <img src={`${API_URL}/images/logo.png`} alt="Logo" className="auth-logo" />
-          <h1>{t('delivery_admin')}</h1>
-          <p>{isLoginMode ? t('welcome_back') : t('create_account')}</p>
+          {/* ✅ استخدام الصور من الباك اند */}
+          <img 
+            src={getImageUrl('logo.png')} 
+            alt="Logo" 
+            className="auth-logo"
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src = 'https://via.placeholder.com/150x150?text=Logo';
+            }}
+          />
+          <h1>نظام التوصيل</h1>
+          <p>{isLoginMode ? 'مرحباً بعودتك' : 'إنشاء حساب جديد'}</p>
         </div>
+
+        {!isLoginMode && (
+          <div className="role-selector">
+            <p>اختر نوع الحساب:</p>
+            <div className="role-buttons">
+              <button
+                type="button"
+                className={`role-btn ${selectedRole === 'client' ? 'active' : ''}`}
+                onClick={() => setSelectedRole('client')}
+              >
+                <FaUser /> عميل
+              </button>
+              <button
+                type="button"
+                className={`role-btn ${selectedRole === 'restaurant_owner' ? 'active' : ''}`}
+                onClick={() => setSelectedRole('restaurant_owner')}
+              >
+                <FaStore /> صاحب مطعم
+              </button>
+              <button
+                type="button"
+                className={`role-btn ${selectedRole === 'driver' ? 'active' : ''}`}
+                onClick={() => setSelectedRole('driver')}
+              >
+                <FaMotorcycle /> مندوب
+              </button>
+            </div>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="auth-form">
           {!isLoginMode && (
@@ -115,13 +228,14 @@ const Login = () => {
                 <input
                   type="text"
                   name="name"
-                  placeholder={t('full_name')}
+                  placeholder="الاسم الكامل"
                   value={formData.name}
                   onChange={handleChange}
                   required
-                  className="form-control"
+                  className={`form-control ${errors.name ? 'error' : ''}`}
                 />
               </div>
+              {errors.name && <span className="error-message">{errors.name}</span>}
             </div>
           )}
 
@@ -131,13 +245,14 @@ const Login = () => {
               <input
                 type="tel"
                 name="phone"
-                placeholder={t('phone_number')}
+                placeholder="رقم الهاتف (مثال: +22712345678)"
                 value={formData.phone}
                 onChange={handleChange}
                 required={!formData.email}
-                className="form-control"
+                className={`form-control ${errors.phone ? 'error' : ''}`}
               />
             </div>
+            {errors.phone && <span className="error-message">{errors.phone}</span>}
           </div>
 
           <div className="form-group">
@@ -146,12 +261,13 @@ const Login = () => {
               <input
                 type="email"
                 name="email"
-                placeholder={t('email_optional')}
+                placeholder="البريد الإلكتروني (اختياري)"
                 value={formData.email}
                 onChange={handleChange}
-                className="form-control"
+                className={`form-control ${errors.email ? 'error' : ''}`}
               />
             </div>
+            {errors.email && <span className="error-message">{errors.email}</span>}
           </div>
 
           <div className="form-group">
@@ -160,13 +276,14 @@ const Login = () => {
               <input
                 type="password"
                 name="password"
-                placeholder={t('password')}
+                placeholder="كلمة المرور"
                 value={formData.password}
                 onChange={handleChange}
                 required
-                className="form-control"
+                className={`form-control ${errors.password ? 'error' : ''}`}
               />
             </div>
+            {errors.password && <span className="error-message">{errors.password}</span>}
           </div>
 
           {!isLoginMode && (
@@ -176,13 +293,14 @@ const Login = () => {
                 <input
                   type="password"
                   name="confirmPassword"
-                  placeholder={t('confirm_password')}
+                  placeholder="تأكيد كلمة المرور"
                   value={formData.confirmPassword}
                   onChange={handleChange}
                   required
-                  className="form-control"
+                  className={`form-control ${errors.confirmPassword ? 'error' : ''}`}
                 />
               </div>
+              {errors.confirmPassword && <span className="error-message">{errors.confirmPassword}</span>}
             </div>
           )}
 
@@ -192,11 +310,14 @@ const Login = () => {
             disabled={loading}
           >
             {loading ? (
-              <span className="spinner-small"></span>
+              <>
+                <span className="spinner-small"></span>
+                جاري المعالجة...
+              </>
             ) : isLoginMode ? (
-              t('login')
+              'تسجيل الدخول'
             ) : (
-              t('register')
+              'إنشاء حساب'
             )}
           </button>
         </form>
@@ -204,12 +325,33 @@ const Login = () => {
         <div className="auth-footer">
           <button
             type="button"
-            onClick={() => setIsLoginMode(!isLoginMode)}
+            onClick={() => {
+              setIsLoginMode(!isLoginMode);
+              setErrors({});
+              setFormData({
+                phone: '',
+                email: '',
+                password: '',
+                name: '',
+                confirmPassword: '',
+              });
+            }}
             className="btn-link"
           >
-            {isLoginMode ? t('need_account') : t('have_account')}
+            {isLoginMode ? 'ليس لديك حساب؟ سجل الآن' : 'لديك حساب بالفعل؟ سجل دخول'}
           </button>
         </div>
+
+        {/* ✅ رابط للصور المتاحة (مساعدة للمطورين) */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="dev-info">
+            <small>
+              <a href={`${API_URL}/api/assets/images`} target="_blank" rel="noreferrer">
+                عرض الصور المتاحة
+              </a>
+            </small>
+          </div>
+        )}
       </div>
     </div>
   );
