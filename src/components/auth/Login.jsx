@@ -5,6 +5,7 @@ import { FaEnvelope, FaLock, FaPhone, FaUser } from 'react-icons/fa';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
 const Login = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -101,7 +102,7 @@ const Login = () => {
     <div className="auth-container">
       <div className="auth-card">
         <div className="auth-header">
-          <img src="/logo.png" alt="Logo" className="auth-logo" />
+          <img src={`${API_URL}/images/logo.png`} alt="Logo" className="auth-logo" />
           <h1>{t('delivery_admin')}</h1>
           <p>{isLoginMode ? t('welcome_back') : t('create_account')}</p>
         </div>
